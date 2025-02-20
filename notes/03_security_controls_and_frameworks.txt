@@ -1,0 +1,93 @@
+Security Controls and Frameworks
+--------------------------------
+
+- security controls: something that makes you more secure
+    - guideline, policy
+    - firewall
+    - technical controls
+    - administrative controls
+=> security controls improve CIA (confidentiality, integrity and availability)
+
+- categories (according to the way we choose to implement them)
+    - technical (hardware, software, configuration)
+    - operational (humans, training programme)
+    - managerial (high-level policies, how do we decide which controls to use)
+
+- types (according to goals)
+    - preventative: stops an attack or reduces its probability
+    - detective: inform about incidents, effects, ...
+    - corrective: recover after an incident (backups)
+    - deterrent: discourage potential attackers (cameras, signs, warnings, ...)
+    - compensating: if we cannot do what we should be doing (e.g. because of financial
+                    reasons), then at least we are doing this...
+    - physical: door, fences, lighting, access control, ...
+
+- frameworks: sort of a guideline, how secure are we, what should we be aiming for?
+    - regulatory: you must comply to be able to participate in that kind of a business (e.g.
+                  payment, banking, medical records, ...)
+    - non-regulatory: what you should have but you can decide, only suggestions
+
+- examples
+    - NIST: National Institute of Standards and Technology
+        - CSF: Cyber Security Framework (IT security)
+        - RMF: Risk Management Framework
+        - FIPS: Federal Information Processing Standards
+    - ISO: International Organization for Standardization
+        - ISO 27001: generic security standard -> lot of companies are trying to achieve this
+        - ISO 27002: classification of security controls
+        - ISO 27017 & 27018: aimed for cloud environments
+        - ISO 27701: privacy, personal data
+        - ISO 31000: risk management
+    - CSA: Cloud Security Alliance
+        - security guidance
+        - enterprise reference architecture
+        - cloud control matrix
+            - lists recommended security products
+    - SSAE: Statements on Standards for Attestation Engagement
+        - SOC2 and SOC3: Security Organization Control
+            - audit specifications
+            - "checklist"
+
+- cybersecurity benchmarks
+    => where are you lacking?
+    - CIS: Center for Internet Security
+        - gives a lot of benchmarks
+        - scans installations, checks configurations
+    - vendor documentation
+        - security guidelines
+        - vendor-specific
+    - Department of Defense Cyber Exchange
+        - some guidelines to help choosing the necessary software and hardware configurations
+        - not vendor-specific
+    - National Checklist Program
+        - benchmark by NIST                                  ^  benchmarks are checking
+        - helps to define necessary steps                    |  infrastructure on which
+    ---------------------------------------------------------+  applications are running
+    - infrastructure: devices, cloud
+        - this is not your direct infrastructure, but keep in mind that you also have a cloud
+          part of your infrastructure
+    - applications: web, mobile, microservices, ...
+        - checks the application code itself
+
+
+
+- standards and regulations
+    => you must abide by these regulations if you plan on doing business in a specific
+       territory, with a specific type of data, or interacting with a specific entity (e.g.
+       the government)
+    - GDPR: General Data Protection Regulation
+        - focused on privacy and protecting personally identifiable information
+    - GLBA: Gramm-Leach-Bliley Act
+        - for financial institutions
+    - SOX: Sarbanes-Oxley Act
+        - major companies abide by this to properly implement security controls, risk
+          assessment, etc
+    - CSA: Computer Security Act
+        - for federal institutions
+    - FISMA: Federal Information Security Management Act
+    - HIPAA: Health Insurance Portability and Accountability Act
+        - regarding medical records
+    - CCPA
+        - relevant in California
+    - PCI DSS: Payment Card Industry Data Security Standards
+        - credit card transaction, processing payments
