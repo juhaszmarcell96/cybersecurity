@@ -1,0 +1,44 @@
+Overview and Roles
+------------------
+
+- goal: securing data and information
+- pillars:  -> CIA
+    - confidentiality: encryption, access control systems
+    - integrity: reliable, not tempered with
+    - availability: systems must be functional, data that is not available is useless
+    - non-repudiation: inability of someone to deny having performed an action (if someone
+                       performs an action with their own identification, they cannot deny it
+                       later)
+- cyber security functions
+    - identity: what threats are you facing?
+    - protect: developing security solutions
+    - detect: monitor, validate
+    - respond: how do you act?
+    - recover: bringing back into compliance all the systems affected by the security incident
+
+- activities
+    - configure devices
+    - monitoring events
+    - incident response
+    - planning
+    - access control and policies
+    - risk assessments
+  
+- roles
+    - CISO: Chief Information Security Officer
+    - technical staff
+    - ISSO: Information System Security Officer
+    - non-technical staff: people using the systems
+  
+- departments
+    - incident response (multiple names for the same department)
+        - CIRT: Computer Incident Response Team
+        - CSIRT: Computer Security Incident Response Team
+        - CERT: Computer Emergency Response Team
+    - SOC
+        - Security Operation Center
+        - monitoring threats
+    - IT
+    - DevSecOps
+        - tries to implement security in all stages in the automation pipeline, starting from
+          the development and ending with the deployment phase
