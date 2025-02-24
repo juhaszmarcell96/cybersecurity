@@ -1,0 +1,108 @@
+Threat Intelligence
+-------------------
+
+-> how much do you know about possible attacks and attack sources?
+
+- where do you get this information from?
+- how do you keep devices up-to-date?
+
+- researching TTPs of attacks
+    - TTP = Tactic, Technique & Procedure
+    - companies and universities -> published papers of researches
+    - dark net and dark web
+        - dark net:
+            - overlay network that exists on top of the internet and requires specific
+              configurations, software or authorization to access
+            - is accessible using the TOR browser (The Onion Router)
+        - dark web:
+            - the content on the dark net
+            - part of the deep web, which includes all parts of the web that are not indexed
+              by standard search engines like google, because they are behind logins or in
+              private databases
+            - you have to know what you are looking for to find it
+            - new exploits are usually being sold here
+            - focused on anonymity
+    - behavioral research: storytelling, how others detected a certain exploit
+    - reputation sources: list of malicious IPs, URLs, email addresses, ...
+    - attack signatures: used by intrusion prevention systems, they analyze traffic and look
+                         for patterns that match known signatures
+    - CTI feeds: Cyber Threat Intelligence -> presenting e.g. attack signatures
+    - SIEM solutions: Security Information Event Management
+        - gather events and try to correlate them to find out whether they have malicious
+          intent
+        - e.g.:
+            - 16:30 : login from Germany
+            - 16:35 : login from USA
+            - when seen on their own, these are both legitimate events, but when examined
+              together, there is potentially a malicious action going on
+    - vendor-proprietary threat feeds
+    - vendor documentation
+    - ISACs: Information Sharing and Analysis Centers
+        - threat intelligence sources for specific industries
+    - OSINT: Open Source Intelligence
+        - free information
+        - attack signatures
+        - IP blacklists
+        - spam and phishing
+    - papers, RFCs, talks, blogs, social media
+
+- IoC: Indicator of Compromise
+    - proofs of compromise
+    - e.g.
+        - malicious URLs found in logs
+        - new files on the filesystem
+        - unauthorized executions
+        - unauthorized running processes
+        - RAT (Remote Access Trojan - maintains access over longer times)
+        - file hash change detected by file integrity monitoring system
+        - unexpected changes detected by registries
+        - resource management (e.g.: sudden high CPU utilization)
+        - new applications
+        - network protocols (unexpected network traffic)
+        - new devices (you should have centralized IP address management system)
+        - exfiltration (data theft)
+    - automated tools for IoC analysis
+        - HIPS/HIDS: Host-based Intrusion Prevention/Detection System
+        - correlation SIEM tools
+
+
+
+
+
+
+
+- Threat Modelling
+    - lot of information is known: attack signatures, reputation lists, IoCs, ...
+    - how to store, share and use this information
+    => language: STIX (Structures Threat Information Expression)
+        - v1 : XML
+        - v2 : JSON
+        - made up of SDOs (STIX Domain Object) describing observed data, files, URLs,
+          indicators, patterns, ...
+    => protocol: TAXII (Trusted Automated Exchange of Intelligence Information)
+        - protocol used to communicate this data from machine to machine
+        - collections:
+            - client sends a request to the server asking for this information, server replies
+        - channels:
+            - clients are subscribers, and the server pushes the information to the clients
+              when the producer publishes such a data to the server
+
+- other threat data feeds (threat intelligence sources)
+    - AIS: Automated Indicator Sharing
+        - offered by the Department of Homeland Security
+    - Threat Maps: revealing the currently happening attacks in real time all over the world
+    - file and signature databases
+        - list of malicious files, hashes, URLs, ...
+        - used by antivirus tools
+    - vulnerability databases: known vulnerabilities
+        - people usually don't update that often
+        - attackers are looking for software with specific versions presenting known
+          vulnerabilities
+
+- moving forward, next-generation threat detection
+    - artificial intelligence and machine learning
+    - fast decisions are needed even without prior known signatures
+    - filters a huge amount of data in a short time
+    + prediction-based analysis
+        - monitor dark net for new attacks
+        - block them before they are used
