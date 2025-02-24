@@ -1,0 +1,55 @@
+Attack and Attacker
+-------------------
+
+- risk = vulnerability + threat
+    - vulnerability: weakness, hardware and software bug, misconfiguration, no input
+                     validation
+    - risk: potential of exploitation
+    - can be high vulnerability and low threat, vice versa, any combination
+
+- categories
+    - internal: has access, mode dangerous, can be an employee
+    - external: from outside of company, no privileges, has to penetrate
+    - intent: what is the end goal? e.g. data
+    - motivation: what is the reason? e.g. curiosity, greed
+    - capabilities: available tools, time, money
+
+- attacker types
+    - hacker: uses a system in a different way than it was designed for
+    - script kiddie: uses hacking tools without knowing what it does
+    - hacktivist: political reasons, ideologies
+    - APT: Advanced Persistent Threats
+        - APT groups: advanced, dedicated groups
+        - attack maintaining access over time, hidden for a long time
+    - criminal syndicate: related to APT groups, sponsored by governments
+    - competitor: another company, usually relying on internal threats
+
+- insider threats
+    - intentional or unintentional
+    - already has access and some permissions
+    - rogue employees
+    - difficult to detect, they may be able to cover their tracks, tamper with the logs
+    - users are usually not security-aware
+    - installing unauthorized third-party software of hardware
+    - using public file-sharing for company data
+
+- attack surface
+    - exposure
+    - amount of points of entry
+    - smaller for outsider threats
+    - social engineering
+    - physical security
+
+- attack vectors
+    - one point of entry
+    - e.g.:
+        - email (phishing)
+        - social engineering
+        - removable media (USB stick, parking lot attack -> just leave it there and hope that
+          someone finds it and uses it)
+        - wireless (can be intercepted even outside of the building)
+        - websites (social media)
+        - local workstation access (lock your screen)
+        - cloud (usually protected with a single username and password)
+        - supply chain (instead of attacking the network directly, attack one of the
+          manufacturers of the devices and install malware during the manufacturing process)
