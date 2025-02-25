@@ -1,0 +1,86 @@
+Security Assessments and Vulnerabilities
+----------------------------------------
+
+=> determining how secure you currently are, deciding where you need to invest
+
+- vulnerability = weakness that can potentially be exploited, giving some benefit to the
+                  attacker (files, permissions, destroying data, denial of service)
+
+- software vulnerabilities (flaws in software that can be exploited)
+    - applications
+        - mostly rely on user input, there is always some kind of an input
+        - maybe even exposed on the internet
+        - danger: an attacker can gain access to the rest of your network through that
+                  compromised application
+    - operating systems
+        - Windows, Linux, MacOS, embedded operating systems
+        - kernel vulnerabilities are dangerous, because they are running with root access
+    - firmware
+        - very dangerous, because they are hard to patch, sometimes update is impossible
+        - security is often not the primary concern of a firmware
+    - impact when a vulnerability is exploited
+        - data exfiltration
+            - gain access to a system and extract information
+            - credit card numbers, usernames, passwords, any sensitive data
+            -> data breach
+        - data destruction
+        - cause an availability loss (website of company, government)
+        - identity theft
+        - financial damage
+
+- zero-day
+    - exploiting a vulnerability before it gets patched
+    - we know it is out there, but is not fixed yet
+    - not much you can do about it
+    - traded and sold for very high prices on the dark web
+
+- legacy
+    - software or hardware that is no longer updated, no longer maintained
+    - if there is a vulnerability in there, it will remain there
+    - maybe you can add external measures to mitigate this, but nothing you can do internally
+    - more common for embedded devices that do not get updates and have no security in them
+
+- configuration vulnerabilities
+    - misconfigured policies, devices, software
+    - one of the top sources that generate vulnerabilities
+    - luckily they are easy to fix, but you have to detect them first
+    - hosts:
+        - usually you rely on the default settings shipped with the device
+        - default admin accounts, firewalls, ...
+        - configure some kind of an access control, do not let guests access confidential data
+    - networks & protocols:
+        - there might be open ports leading to vulnerabilities
+        - limit the running services to the essential ones
+        - use the secured protocol versions and authentication
+    - application errors:
+        - usually error messages display a lot of information so that developers can identify
+          where the errors are coming from
+        - these error messages can be gold mines in the right hands
+            - what services are running
+            - database structure
+            - stack trace
+        - should not be displayed publicly, keep it private for debugging
+        - there are exploits out there aiming to crash certain applications so that they can
+          have access to such error messages
+
+- other vulnerability sources
+    - vendors: problems during development
+        - vendor management is important
+        - only use trusted vendors
+        - you have to wait for the vendor for patches for vulnerabilities -> speed matters
+    - 3rd party code
+        - reusing 3rd party libraries, SDKs, code samples, open-source projects
+        - testing process is necessary during development
+    - outsourced storage
+        - cloud storage of confidential information
+        - data breaches affecting these companies affect you as well
+        - their data breach is your data breach
+    - cloud infrastructure
+        - companies move their services to cloud service providers
+        - file storage, two factor authentication
+        - security policies should apply to cloud infrastructure as well
+        - usually these are less protected compared to your own infrastructure
+        - shared responsibility between you and the cloud service provider
+            - cloud service provider: security of the cloud
+            - you: everything that comes on top of that infrastructure, applications, user
+                   data
