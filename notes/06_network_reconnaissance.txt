@@ -1,0 +1,197 @@
+network reconnaissance
+----------------------
+
+=> identifying whatever is currently running on you network (hardware, nodes, servers,
+   software, services)
+- good guy : security assessment
+- bad guy : first step in an attack, identifying the weakest links
+- monitoring network traffic, hardware, software
+
+- ipconfig/ifconfig/ip (windows/linux_old/linux_new)
+    - topology discovery
+    - how many subnets
+    - how many hosts
+    - what are the default gateways
+    - IP addresses (static/dynamic)
+    - MAC address
+    - even IPv6
+
+- ping
+    - ICMP message codes
+    - connection status information
+    - management reporting protocol
+    - ECHO REQUEST, ECHO REPLY
+    - round-trip-time, package size, IP address, TTL (time-to-live, number of nodes)
+    - on windows, it send 4 requests, on linux it runs indefinitely (-> "-c 5" to send only 5)
+    - can be used to check whether DNS resolution works (ping google.com)
+    - used to check for network reachability
+
+- even if ping works, other protocols might not
+    - HTTP port might not be open even if ICMP is open
+    - on the other hand, ICMP might be blocked, but others might be working
+
+- arp
+    - address resolution protocol
+    - send traffic on a local network, IP address is known, but MAC address is not
+    - layer 2 destination MAC address is needed to send the packet
+    - if it is inside of our network, then it is the MAC of the destination host
+    - if it is outside of our network, then it is the MAC of the default gateway (exit point
+      of the network)
+    - sends a broadcast: is there anyone with this particular IP address?
+    - response comes as a unicast message: yeah, I have this IP
+    - ARP table is stored locally on our host
+    - ARP table: mapping between IP addresses and MAC addresses
+        - you want to send a packet to a specific IP address, you have to address it to this
+          particular MAC address
+    - windows: apr -a
+        - static addresses: multicast and unicast
+        - dynamic addresses: the addresses that are learned using ARP
+    - linux: arp
+        - flags C : complete entry, dynamic entry
+        - flags M : permanent (multicast, unicast)
+    - ARP table: weakness in network security
+        - insecure
+        - communication is in clear text
+        - no way of validating the source of the information that a host receives when they
+          send an ARP request
+        - a host doesn't even have to send a request to get a reply -> ARP poisoning -> man in
+          the middle attack
+
+! man-in-the-middle attack is also called on-path attack
+
+- route
+    - routing table is mostly simple
+        - for this destination IP, you should be using this interface
+        - if it is not on your local network, just send the packet to the default gateway
+    - windows: route print
+    - linux: route
+    - linux: ip r s
+
+
+
+
+
+
+
+- traceroute/trace/tracert
+    - trying to determine whether the destination is answering and what are the network nodes
+      along the way to reach that destination
+    - if on local network, it is similar to ping
+    - if not, then it lists the nodes along the way
+    - windows: tracert
+        - uses ICMP
+        - send ICMP with TTL=1 (dies after one node, sends an expired reply)
+        - send ICMP with TTL=2
+        - ...
+        => explore the whole path until you reach the end destination
+    - linux: traceroute
+        - uses UDP probes
+        - ICMP is sometimes slower, sometimes it is ignore altogether
+    - pathping tool on windows: generates statistics as well
+        - packet loss
+        - round trip time
+        - ...
+    - mtr: pathping equivalent for linux
+    => a single, unexpectedly high delay might indicate a security incident on that node
+
+- nmap
+    - free, open source, can do a lot of things
+    - nmap -sn 192.168.0.0/24
+        - ping sweep, which hosts are up in the network
+        - iterate from 192.168.0.0 tp 192.168.0.255 and execute ping on every host
+    - nmap 192.168.0.0/24
+        - perform network discovery first (who is up)
+        - then perform service discovery
+        - if a host replies with being up, it scans for services, like HTTP, HTTPS, the most
+          common ports
+    - "-sS" -> TCP SYN scan, half-open connection scan (SYN, SYN ACK, but no ACK)
+        - was considered stealthy in the past
+    - "-sT" -> full three-way-handshake -> everyone will see that you tried to scan the
+      network
+    - UDP scanning techniques
+    - "-SI" -> idle scan, zombie scan
+        - relaying your scanning packets through another victim (zombie) host
+    - "-p" -> specify the ports you want to scan
+    - "-o" -> what OS is running on a host
+    - uses a predefined database (can be updated) of known platforms
+        - CPE : common platforms and enumerations database
+    - a lot of other options
+    - not 100% valid information
+
+- netstat
+    - lists all the active listening ports and active connection on your machine
+    - are there malicious services running on hosts?
+    - local port, destination address and port, TCP or UDP, ...
+
+- other tools
+    - theHarverster
+        - open source intelligence gathering tools
+        - gather valid email addresses, known domains
+        - gather publicly available information
+    - curl
+        - used to craft web request
+        - can talk over a number of protocols (email, file share, http, ...)
+    - Nessus
+        - vulnerability scanning
+        - commercial tool
+    - scanless
+        - attempts to evade intrusion detection systems that are going to fire up an alarm
+          whenever they see scanning traffic (bunch of request coming in in a short time span,
+          sent towards a large number of IP addresses and ports)
+
+
+
+
+
+
+- DNS reconnaissance
+    - nslookup: windows/linux
+    - dig: unix/linux
+    - host: linux
+    - dnsenum: helps you package in one single request a lot of tests and subrequests
+    - there are situations when the DNS server can actually host more information than it
+      needs, exposing some valuable information, like who is the admin, what security measures
+      are used, ...
+    - zone transfer: functionality in DNS servers used to synchronize multiple DNS servers
+                     internally -> should not be accessible from the outside
+        - sometimes can be done from the outside -> dumps a lot of information
+
+- packet capture and analysis
+    - capture network traffic to perform network and host discovery
+    - is there some unencrypted traffic going on
+    - are we communicating with illegitimate hosts
+    - tough to do, there are a number of places to capture network traffic at
+        - at the network interface itself on a host
+            - tcpdump
+            - wireshark
+        - on a network segment, at a switch or router
+            - smart network devices
+            - not an easy task, not efficient, but possible
+            - SPAN mode (switchport analyzer) -> send it to server for further analysis
+            - TAP -> test access port
+                - not a switch
+                - a packet comes into one port, it goes out on another port, but a copy is
+                  sent out on a third port for analysis
+
+- packet injection
+    - crafting fake packets, see how it reacts
+    - hping: can also perform network scanning, flooding traffic
+    - scapy: small python utility, generates any type of traffic
+    - tcpreplay: capture traffic and replay it back
+        - in the past it was a good method for bypassing authentication systems
+        - capturing the authentication sequence and replaying that sequence -> access
+
+- exploitation frameworks
+    - more complex
+    - tools for active offense
+    - detect vulnerabilities
+    - craft the payload to send
+    - goal is to gain privileged access
+    - also used for penetration testing
+    - e.g.:
+        - Metasploit
+        - Sn1per
+        - RouterSploit (embedded systems)
+        - BeEF (web browsers)
+        - ZAP (web applications)
+        - Pacu (cloud)
