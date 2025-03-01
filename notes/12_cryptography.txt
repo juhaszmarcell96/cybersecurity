@@ -1,0 +1,144 @@
+Cryptography
+------------
+
+- terminology
+    - plaintext: unencrypted version of the data, anyone can read it
+    - ciphertext: encrypted version of the plaintext, cannot be read by anyone, except for the
+                  people who have the decryption key
+    - cipher: the algorithm we use to encrypt and decrypt data
+    - cryptanalysis: process of analyzing encrypted data and trying to decode it, it is a way
+                     to reverse-engineer the encryption process
+    - hashing: mathematical operation that takes an input and produces a fixed length output
+        -> not encryption, hashing is not reversible
+    - encryption: receives any kind of input, produces a variable length of data, representing
+                  the encrypted version of the data
+
+=> ciphertext cannot be used by anyone, it can be used to store and transmit data, but when
+   the data is actually used, it needs to be decrypted first
+
+- hashing
+    - takes a variable length input (any input)
+    - produces a fixed-length cryptographic output
+    - one-way functions, cannot be reversed
+    - used for ensuring integrity
+    - the same input always produces the same output, but changing even a single bit in the
+      data will result in a completely different hash
+    - e.g. file integrity monitoring tools, storing passwords, ...
+    - can produce collisions = different inputs, same output
+    - you should never store passwords, neither encrypted nor in clear text, always store the
+      hashes of the passwords (non-reversible)
+    - algorithms: MD5 (message digest 5), SHA (secure hash algorithm)
+    - digital signatures work with hashes as well, there is a hash attached to the document,
+      the receiver can validate it
+
+- encryption
+    - mathematical operation as well
+    - takes a variable-length input and produces a variable-length output
+    - the process can be reversed if we have the corresponding key used for encryption
+    - on a bit level, it is performed based on transpositions and substitutions, which are
+      reversible transformations
+        - transposition: switching letters and bits around
+        - substitution: replace any occurrence of a character or byte sequence with another
+                        character or byte sequence
+    - encryption algorithms are public, keys must be secret
+    - you never hide a message by relying on the fact that nobody knows the algorithm
+    - must be secure enough so that in absence of a key, confidentiality is ensured even if an
+      attacker gains access to the ciphertext
+        -> security through obscurity is bad
+        - hiding an algorithm is not a valid option, someone will find it sooner or later
+        - it is a large bonus that publicly available algorithms are reviewed, patched, ...
+
+- symmetric encryption
+    - there is one key used for both encryption and decryption
+    - a key is just a number of bits -> how to you secure, store and distribute it?
+    - we can secure data using keys, but how do you secure the keys?
+        - specific algorithm dealing with key negotiation
+        - use a separate channel (e.g. when sending an encrypted email, send the key via SMS)
+    - no identity information ties to the key
+        - everyone uses the same key
+        - no idea who sent the message
+        - if the key is stolen, you have no idea that it has been compromised
+        - cannot guarantee integrity of the message, because everyone uses the same key
+    - it is very fast, easy to implement on hardware
+    - number one method used for encrypting large sets of data (emails, movies, VPN traffic,
+      entire disks)
+
+
+
+
+
+
+
+
+
+- encryption under the hood
+    - stream cipher
+        - applied to a constant stream of data (netflix, VPN, ...)
+        - applied bit by bit
+        - when you don't know the total amount of data
+        - you don't start with the first bit, you start with the initialization vector
+            - predefined, randomly generated set of data that we pretend to be the beginning
+              of our stream of data
+    - block ciphers
+        - work on blocks of data, like 64 or 128 bits
+        - padding is applied when the data does not divide evenly (alignment)
+        - each block is "scrambled" individually
+        - identical blocks can produce identical ciphertext, which is not good
+            - performing cryptanalysis is possible
+            - not every data is unique, emails might end with the same signature
+            - this will help the attacker to reverse-engineer the original text
+            - solution: block chaining
+                - you start with an IV (initialization vector) (random bytes)
+                - you combine the plain text with the IV and the key
+                - the resulting ciphertext is used as the IV for the next block
+                   
+               +-----------+    +-----------+    +-----------+    +-----------+
+               |  Block 1  |    |  Block 2  |    |  Block 3  |    |  Block 4  |
+               +-----------+    +-----------+    +-----------+    +-----------+
+                     |                |                |                |
+          IV -----> XOR      +-----> XOR      +-----> XOR      +-----> XOR      +----->
+                     |       |        |       |        |       |        |       |
+                key  |       |   key  |       |   key  |       |   key  |       |
+                +---------+  |   +---------+  |   +---------+  |   +---------+  |
+                | encrypt |  |   | encrypt |  |   | encrypt |  |   | encrypt |  |
+                +---------+  |   +---------+  |   +---------+  |   +---------+  |
+                     |       |        |       |        |       |        |       |
+                     +-------+        +-------+        +-------+        +-------+
+                     |                |                |                |
+              +------------+    +------------+   +------------+   +------------+
+              | ciphertext |    | ciphertext |   | ciphertext |   | ciphertext |
+              +------------+    +------------+   +------------+   +------------+
+
+- asymmetric encryption
+    - using a key pair, generated together
+        - private key (you never share this)
+        - public key (you can share this freely)
+    - not using the same key anymore, one for encryption and one for decryption
+    - the private and the public keys are interconnected mathematically
+        => whatever one key encrypts, only the other can decrypt and vice-versa
+        => you can derive the public key from the private key, but NOT vice-versa
+    - private key is generated first, it is used to generate the public key
+    - solves the problem of key distribution when receiving encrypted data
+        -> sender uses the receiver's public key to encrypt the message
+        -> receiver uses their private key to decrypt the received message
+    - introduces identity to the encryption process
+    - downsides:
+        - slow (mathematically complex and computationally very intensive)
+        - input size limited to key length, you cannot protect more information than the
+          length of the key
+    => used for small amounts of data
+        - authentication data
+        - securely establishing a symmetric key (encrypt the symmetric key used from now on)
+            => this is what happens when using HTTPS or when using VPN, the first thing you do
+               is that you negotiate a symmetric key based on asymmetric encryption
+    - algorithms
+        - RSA (acronym of the names of the inventors)
+            - used for encryption
+            - "trapdoor algorithm": can easily be computed if you have the public key, but
+                                    cannot be easily reversed if you don't know the private
+                                    key
+        - DSA: used for digital signatures
+        - ECC (Elliptic Curve Cryptography)
+            - can use shorter keys, better for resource-constrained devices
+            - completely different mathematical model
+            - similar security as RSA but much shorted keys
