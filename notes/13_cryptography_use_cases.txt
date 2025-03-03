@@ -1,0 +1,427 @@
+Cryptography Use Cases
+----------------------
+
+- digital signatures (hashing + encryption)
+    - we are the only ones that own a specific private key
+    - that certain private key can be used to uniquely identify us
+    - anyone who receives the data can identify the sender
+    - remember that you can only encrypt as much data as the key length
+    => encrypt the hash of the original message
+        - we can take e.g. an email, however long, and we can hash it down to a fixed length
+        - we can then encrypt that hash using out own private key -> digital signatures
+    - example
+        - there is a sender and a receiver with an insecure channel connecting them
+        - sender has a clear text message 'M'
+        - the sender passes that message 'M' though a hashing function -> 'h(M)'
+        - the sender takes 'h(M)' and encrypts it with their own private key -> 'e(h(M))'
+        => 'e(h(M))' = digital signature
+        - this is attached to the original message (digitally signed message)
+        - the message is sent as clear text with the digital signature attacked
+        - the receiver has to authenticate the signature
+        - the receiver takes 'e(h(M))' and decrypts it using the sender's public key -> 'h(M)'
+        - the receive also calculates a hash for the original document
+        - if the received and decrypted hash matches the calculated hash, the message
+          integrity is okay, and that it was really sent by that specific sender
+    - ensures
+        - integrity (hashing)
+        - authentication (asymmetric encryption)
+        - non-repudiation (sender cannot deny encrypting with their private key)
+    => no confidentiality (message is sent in clear text)
+
+                Sender                                                  Receiver
+                ------                                                  --------
+                   |                                                        |
+                 +---+                                                      |
+                 | M |  prepare the clear text message                      |
+                 +---+                                                      |
+                   |                                                        |
+                +------+                                                    |
+                | h(M) |  generate a hash of the message                    |
+                +------+                                                    |
+                   |                                                        |
+              +---------+                                                   |
+              | e(h(M)) | encrypt the hash with own private key             |
+              +---------+ (digital signature)                               |
+                   |                                                 +------------+
+                   |      -------------------------------------->    | M, e(h(M)) |
+                   |              send M and e(h(M))                 +------------+
+                   |                                                        |
+                   |                                              +-------------------+
+                   |                  decrypt the signature using | d(e(h(M))) = h(M) |
+                   |                     the sender's public key  +-------------------+
+                   |                                                        |
+                   |                                                    +-------+
+                   |           calculate a hash of the received message | h(M)' |
+                   |                                                    +-------+
+                   |                                                        |
+                   |                                                 +---------------+
+                   |                                                 | h(M)' =? h(M) |
+                   |                                                 +---------------+
+                   |                                                        |
+
+
+
+
+
+
+
+
+
+
+
+
+
+- digital envelope
+    - protects an entire message
+    - digital signatures don't encrypt the whole message, the original message is sent in
+      clear text -> anyone who intercepts it can read it
+    - example
+        - there is a sender and a receiver with an insecure channel connecting them
+        - the sender obtains from the receiver a copy of their public key 'RecPubK'
+        - sender has a clear text message 'M'
+        - the sender encrypts the clear text message using a symmetric key 'symK' -> 'symK(M)'
+            - the symmetric key is randomly chosen by the sender
+        - the sender then encrypts the symmetric key using the receivers public key
+            -> 'RecPubK(symK)' = encrypted symmetrical key
+        - the sender sends both the encrypted message and the encrypted symmetric key
+        - the receiver decrypts the symmetric key with their private key
+            => 'RecPrivK(RecPubK(symK))' = symK
+        - the receiver uses the symmetric key to decrypt the message encrypted with the same
+          symmetric key
+        => sending encrypted message along with the decryption key
+    => confidentiality: message is encrypted
+    - authentication is lost: message was encrypted by the receiver's public key, the identity
+                              of the sender is nowhere to be found here
+
+                sender                                          receiver
+                ------                                          --------
+                   |                                           +---------+
+                   |                                           | RecPubK | own public key
+                   |                                           +---------+
+                   |                                          +----------+
+                   |                                          | RecPrivK | own private key
+                   |                                          +----------+
+                   |                                               |
+                   |  ------------------------------------------>  |
+                   |            request for public key             |
+              +---------+                                          |
+              | RecPubK |  <-------------------------------------  |
+              +---------+      reply with public key (RecPubK)     |
+                   |                                               |
+                 +---+                                             |
+                 | M | prepare the clear text message              |
+                 +---+                                             |
+                   |                                               |
+                +------+                                           |
+                | symK | generate random symmetric key             |
+                +------+                                           |
+                   |                                               |
+              +---------+                                          |
+              | symK(M) | encrypt the message with the sym key     |
+              +---------+                                          |
+                   |                                               |
+           +---------------+ encrypt the sym key with the          |
+           | RecPubK(symK) | receivers public key                  |
+           +---------------+                                       |
+                   |                                               |
+                   |                                       +---------------+
+                   | ------------------------------------> | RecPubK(symK) |
+                   |       send the message and the key    +---------------+
+                   |                                          +---------+
+                   |                                          | symK(M) |
+                   |                                          +---------+
+                   |                                               |
+                   |                                            +------+
+                   |                  decrypt sym key with own  | symK |
+                   |                  private key               +------+
+                   |                                               |
+                   |                                             +---+
+                   |                  decrypt message with the   | M |
+                   |                  decrypted symmetric key    +---+
+                   |                                               |
+
+
+
+
+
+
+
+
+=> combine digital signatures with digital envelope to get integrity, confidentiality,
+   authentication and non-repudiation
+
+- negotiating the encryption keys is called key exchange
+
+
+
+- digital certificates
+    - we need a public key to validate a digital signature, and we need a public key to send a
+      digital envelope
+    - how de we communicate this public key in real life?
+        -> they are packaged in digital certificates
+    - a container or a wrapper for a public key (along with some other information)
+    - a digital certificate is associated with an identity (like ID or driver's license)
+    - problem: anyone can generate a private-public key pair, anyone can generate a digital
+               signature and a digital certificate, they can impersonate another person or
+               send a fake identity
+    - what do we do in real life?
+        - if someone claims to have a certain name, you won't accept any document to prove it,
+          you will only accept government-issued documents as proof of identity
+        => there is a trusted body distributing these documents
+    - similarly, digital certificates must be signed by a trusted authority to be considered
+      valid => Certification Authority (CA)
+    - everybody must trust the CA, they need to have some kind of a verification process, they
+      must validate the identities
+    - most operating systems and browsers come pre-packaged with a list of trusted CAs from
+      all over the word, they are trustworthy, have not been breached, ...
+
+
+
+- PFS (Perfect Forward Secrecy)
+    - in order to encrypt the bulk of the data, we need to generate a symmetric key, and we
+      protect it with the public key
+    - problem: if someone records that communication, and later at some point the private key
+               of the receiver gets leaked, then all that communication can be decrypted, the
+               content and the symmetric keys can be decrypted -> loose confidentiality
+    - use ephemeral/temporary keys instead of the server's private key, these keys should be
+      frequently regenerated and should not be reused
+        => ephemeral keys are not protected by the server's private key, if the private key
+           gets compromised, the symmetric keys are not automatically revealed
+    - there is a mathematical algorithm going on known as key-exchange
+    - key agreement protocol: Diffie-Hellman (DH)
+    - DH relies on an exchange of messages over an unsecure channel that helps the sender and
+      the receiver to reach the same conclusion about the common symmetric key without
+      actually exchanging that symmetric key over the network
+        - 'A' and 'B' hosts exchange a public prime number 'P' and a generator 'G'
+        - 'A' and 'B' both generate their own random private keys -> 'APrivK', 'BPrivK'
+        - 'A' and 'B' both generate a public key based on 'P', 'G' and their of 'PrivK'
+            - 'A': 'APubK' = (G ^ APrivK) % P
+            - 'B': 'BPubK' = (G ^ BPrivK) % P
+        - now they exchange these public keys
+        - 'A' and 'B' both calculate the shared secret key
+            - 'A': 'SharedK' = (BPubK ^ APrivK) % P = (((G ^ BPrivK) % P) ^ APrivK) % P
+            - 'B': 'SharedK' = (APubK ^ BPrivK) % P = (((G ^ APrivK) % P) ^ BPrivK) % P
+        - are these mathematically equivalent? => yes
+            (((G ^ BPrivK) % P) ^ APrivK) % P = (((G ^ APrivK) % P) ^ BPrivK) % P
+                  ((G ^ BPrivK) ^ APrivK) % P = ((G ^ APrivK) ^ BPrivK) % P
+                  (G ^ (BPrivK * APrivK)) % P = (G ^ (APrivK * BPrivK)) % P
+        - if someone intercepts the communication, they would see 'P' and 'G' and they would
+          see 'APubK' and 'BPubK' -> 'APrivK' and 'BPrivK' are impossible to calculate from
+          this information (not impossible, but computationally unfeasible) -> no one else can
+          calculate the shared secret either
+        - can be combined with the ephemeral algorithms so that the key is re-negotiated every
+          so often => DHE (DH ephemeral), EDH (ephemeral DH), ECDHE (elliptic curve DH
+          ephemeral)
+
+
+
+
+
+              Host A                                                        Host B
+              ------                                                        ------
+                 |                                                            |
+                 |                                                            |
+              +------+                                                     +------+
+              | P, G |     <----- exchange public prime P and G ----->     | P, G |
+              +------+                                                     +------+
+                 |                                                            |
+            +---------+                                                   +--------+
+            | APrivK  |            generate random private key            | BPrivK |
+            +---------+                                                   +--------+
+                 |                                                            |
+    +------------------------+                                     +------------------------+
+    | APubK = (G^APrivK) % P |        generate public key          | BPubK = (G^BPrivK) % P |
+    +------------------------+                                     +------------------------+
+                 |                                                            |
+                 |         ------------------------------------------>        |
+                 |                   exchange public keys                     |
+                 |         <------------------------------------------        |
+                 |                                                            |
+ +------------------------------+                             +------------------------------+
+ | SharedK = (BPubK^APrivK) % P |  compute shared secret key  | SharedK = (APubK^BPrivK) % P |
+ +------------------------------+                             +------------------------------+
+                 |                                                            |
+
+- modes of operation
+    - non-authenticated modes of operation
+        -> CBC: Cipher Block Chaining mode
+            - split the data into fixed blocks
+            - combine a random initialization vector with the first block before encryption
+            - use the encrypted block as the initialization vector in the next block
+            => even if two block are identical, they will not produce identical encrypted data
+        -> Counter mode
+            - instead of reusing encryption material from the previous block, we are
+              encrypting the original cleartext along with a counter value and an
+              initialization vector
+            - in this case, the initialization vector (IV) is the same for every encryption,
+              also known as 'nonce', but it is combined with a counter starting at 0 and
+              incremented for each block
+            - this way, no two identical blocks will produce the same identical result
+        - these two methods are considered unauthenticated methods, because there is no
+          identity information related to the encryption operation
+    - Message Authentication Code (MAC)
+        - we take the encrypted message, passing it through a MAC algorithm, where the MAC
+          algorithm does pretty much what a hashing function does except that this time the
+          hashing is performed not just on the original message, but on the original message
+          plus a secret key -> message authentication code
+        - this MAC is attached to the message and sent to the destination
+        - the destination, after decrypting the message, they can compare the received MAC
+          with their own calculated MAC (using the secret key that was never communicated) to
+          validate integrity
+        - this solves the issue when someone intercepted the message, modified it and
+          recalculated the hash, because now this is not possible anymore, because no one else
+          knows the secret key
+        - AES CBC : Advanced Encryption Standard Cipher Block Chaining
+        - HMAC SHA : Hash-Based Message Authentication Codes Secure Hash Algorithm
+        - some of these algorithms are vulnerable to a "padding oracle attack"
+            - an attacker records the encrypted data
+            - the server acts as a "padding oracle", meaning that it returns an error code if
+              it receives a ciphertext with invalid padding
+            - attacker sends modified ciphertexts to the system and observes its responses
+              (e.g. if the padding is correct or incorrect)
+            - by analyzing the system's feedback, the attacker can gradually infer information
+              about the plaintext, one byte at a time
+            - this allows the attacker to decrypt data or forge valid ciphertexts without
+              knowing the encryption key
+    - Authenticated Encryption with Additional Data
+        - additional data from the actual data header or the communication session in order to
+          generate the encrypted message so that they are unique to that communication session
+        - to avoid replay attacks: an attacker intercepts a communication, even if it is
+          encrypted, and then resends those same packets at a later time
+        - if we don't have some way to identify which packets belong to which session, an
+          attacker could replay an authentication session
+
+- where can we use cryptography?
+    - authentication, access control (one key belongs to one single person)
+    - non-repudiation (message is encrypted with a key, the owner cannot deny generating it)
+    - confidentiality
+        - hybrid encryption (symmetric key for the bulk of the data, asymmetric for the
+          symmetric key)
+        - HTTPS
+            - first, download the public certificate from the website, including the public
+              key
+            - the public key can be used further negotiate a symmetric key used to encrypt the
+              actual traffic afterwards
+    - integrity (hash, MAC)
+    - obfuscation (make something difficult to read)
+        - e.g. compiling the source code, binary is hard to reverse-engineer, but computers
+               can still work with that obfuscated data without changing it
+        - as for encryption, obfuscation cannot really be achieved, because you need to
+          decrypt the data when you want to use it, even computers cannot work with encrypted
+          data
+
+- performance
+    - sometimes you don't have the computational power to perform cryptography (IoT, embedded)
+    - use simpler algorithms or shorter keys
+    - latency can be an issue as well, in real-time processes you cannot spend too much time
+      executing encryption algorithms
+        - similarly, you cannot communicate with secure websites if the necessary computations
+          cannot be executed in a predefined time frame
+    - key size: same algorithm with a longer key takes more time to break
+        - don't compare key lengths between different algorithms
+    - overhead: every time you access a data, these things are dynamically computed
+    - entropy: measure of disorder
+        - clear text document has low entropy
+        - encrypted data has high entropy, a lot of disorder
+        => it is very important that the generated random numbers are truly random, otherwise
+           cryptanalysis could determine what key we will be using next
+        => there are specific keys, that in specific implementations of specific algorithms
+           generate low entropy (they don't encrypt data that well)
+            -> the implementations out there take this into account, they should know about
+               these keys and should throw them away when generated
+    - how to fight against predictability?
+        - nonces (numbers used only once) -> random number or counter combined with some data
+          to get unique results (does not necessarily have to be random, but has to be unique)
+        - initialization vectors -> random data that make the initial encryption unique
+        - salts -> can be used along hashing, commonly used along with hashing passwords
+                -> rainbow table: precalculated table of hash values of all possible inputs
+                   that can generate that hash value
+                -> rainbow tables are huge, but can be used to look up possible passwords
+                   based on the hash values (linear search)
+                -> password is combined with a small string of bytes before hashing
+                -> this invalidates the rainbow table
+                -> the authentication system gets the password, concatenates the salt,
+                   calculates the hash and compares the result with the one in the database
+                -> salt doesn't even need to be secret, but it still invalidates the rainbow
+                   table
+
+- crypto attacks, what makes them easier?
+    - age of the encryption algorithms -> maybe it used to be a valid algorithm, but
+      weaknesses have been found since -> choose an up-to-date algorithm
+    - age of the encrypted data -> the longer you keep a specific data encrypted, the more you
+      risk it being compromised, maybe the algorithm that you used to encrypt that data is now
+      proven to be vulnerable
+
+- crypto attacks
+    - Man-in-the-Middle attacks
+        - there is a 3rd party intercepting the communication between two hosts
+        - attacker either just intercepts it, or maybe even alters it, changing the integrity
+        - special category: the ones that address that key negotiation part before the actual
+          communication starts, e.g. injecting their own public key (mitigate this using
+          signed certificates)
+    - Downgrade attack
+        - in the negotiation phase, the supported algorithms are also negotiated
+        - an attacker can pose as someone who knows only the weakest algorithms out there
+        - if a web server accepts any versions of those algorithms, then it is a problem
+    - Key stretching & key salting
+        - maybe the user wants to use the password "12345" to secure the whole disk
+        - the security system does not use that password directly, the password is passed
+          through several transformation operations -> longer and more complex, mixing
+          characters, ... (this is key stretching, key salting is explained above)
+    - Exploiting collisions
+        - hash collision = two different inputs generate the same output when passed to the
+          hash function
+        - this is bad, because it defeats the concept behind integrity
+        - an attacker could change a file or traffic in such a way so that the resulting hash
+          is the same for the now data as it was for the old one
+    - birthday paradox
+        - how many people do you think need to be in a room so that the chance of two of them
+          having the same birthday is 50%?
+        - most people say 365/2, so around 180, but the actual answer is 23
+        - the chance of two people having a specific predefined birthday is low, but the
+          chance of two people having any same birthday is much higher
+        - we usually think about how many people there should be so that one of them shares
+          your birthday, but when there are already two people in the room, the third person
+          can share the birthday with any one of you, and so on
+        - with 60 people, you are already around 99%
+        - it is actually not that difficult to generate inputs that generate the same output
+          when passed through the hashing function
+        - a hashing function's security is dependent on how resistent it is against collisions
+    
+- quantum computing
+    - store data using qbits -> can store any value in between 0 and 1 with a certain
+      probability -> superposition
+    - these qbits can be entangled, they can be connected to one another, so that when one
+      qbit is collapsed to either 0 or 1, all the other qbits also collapse to either 0 or 1
+    - huge number of variables changing at the same time -> lot of computing power
+    - brute force attacks always work... you just need either time or computational power
+    - nowadays we rely on the assumption that the algorithms and the key lengths that we are
+      using make this brute force attack computation operation impossible or takes so much
+      time that it is irrelevant
+
+- low-power cryptography
+    - lot of research going into this mostly because of IoT
+
+- homomorphic encryption
+    - related to processing personally identifiable information or any sensitive data
+    - a way to allow the statistical processing of protected data without actually having
+      access to the data itself
+    - great for generating statistics without having access to the personal information
+
+- blockchain
+    - just a list of transactions distributed all over the world
+    - each record in that list is called a block and is mathematically connected (hashing) to
+      the block before it
+    - anybody can validate that a certain block in the chain really belong in that chain
+    - distributed database, everybody has access to it
+    - everyone can detect forged entries
+
+- steganography
+    - secret writing
+    - hide information in plain sight
+    - you can hide information in whitespaces, how many whitespaces there are after each word
+    - you can hide information in the colors of a picture
+    - not exactly cryptography, more like security through obscurity
+    - smart method for exfiltrating data from a secure system
+    - you can hide information in TCP flags or DNS requests, nobody looks at those
+    - you can even hide data in the message sending frequency
