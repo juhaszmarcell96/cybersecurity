@@ -1,0 +1,142 @@
+Authorization and Personnel Policies
+------------------------------------
+
+- AAA process
+    - identification
+        - present username or email address
+        - some sort of an identifier that uniquely identifies you as a user or as a person
+    - authentication
+        - prove that you are who you claim you are
+        - present some sort of a secret information some sort of a key a password a passphrase
+          a certificate something that only you should have or know
+    - authorization
+        - what are you allowed to do?
+        - we know who you are but what kind of resources can you access, what network
+          destinations can you access, where can you create new files, ...
+        => authorization policy
+    - accounting
+
+- access control methods
+    - purely theoretical models
+    - DAC: Discretionary Access Control
+        - at the user's discretion who has access to the files
+        - whenever you create a file you can set the access permissions
+        - the creator is responsible for access control
+        - most implemented method of providing file access in all file systems and operating
+          systems nowadays
+    - RBAC: Role-Based Access Control
+        - especially in enterprise networks nowadays
+        - group membership
+        - centralized, you are not granting the access, users automatically inherit access
+          to certain files or services simply by being a member of a specific group
+        - new members are easier to set up, they just need to be added to the necessary groups
+    - MAC: Mandatory Access Control
+        - most basic access control system, but it is not widely implemented
+        - system-controller policy
+            - labels are assigned to objects that people need to access
+                - label contains a kind of security clearance (secret, confidential, ...)
+            - the system evaluates the clearance level of a person that tries to access these
+              folders, services or documents
+        - you need to be a member of a partition to get access to documents in that partition
+        - centralized decision point
+    - ABAC: Attribute-Based Access Control
+        - mix and match attributes
+        - when you are evaluating what permissions a user should get, besides looking at the
+          identity (user name), you can also look at other attributes of that user
+            - local or remote (VPN)
+            - company device or own device
+            - time of day
+            - operating system
+            - ...
+        - these attributes can be used to refine the permissions
+    - RuBAC: Rule-Based Access Control
+        - not exactly a separate category
+        - any system-controlled access model in a centralized system
+            - e.g. a firewall, users have no influence over the rules of a firewall
+        - continuous monitoring (conditional access example)
+            - monitors user behavior after authentication, are they behaving according to
+              baselines, are they behaving as they should -> if not, trigger an alarm, exclude
+              the user until it is cleared
+        - PAM (Privileged Access Management)
+            - privileged access = all the actions that admins and root users are allowed to
+              perform
+            - what are those admins allowed to do?
+            - even an admin should not be able to destroy the company, erase every data, ...
+            - restrict the normal behavior of an admin user even though they have absolute
+              power inside of a network
+
+- Directory Services
+    - basically a database of users, hosts, network locations, permissions, access lists, ...
+    - whenever you log in or get a login failed message, it comes from a decision process that
+      takes the directory service into account
+    - most common: Active Directory
+    - X.500: de facto standard for defining for defining a directory service
+    - LDAP: protocol that we are using to access this directory database
+    - hierarchical database
+        - each entry is an object (user, group, device, location in the network, ...)
+        - these objects are characterized by attributes
+            - CN: Common Name (name of the resource)
+            - OU: Organizational Unit
+            - O: Organization
+            - C: Country
+            - DC: Domain Component
+        - e.g.: CN=webserver, OU=training, O=Tesla, C=US, DC=tesla, DC=com
+            => a resource called "webserver", operated by Tesla in the US, is part of the
+               "training" organizational unit, is accessible at "tesla.com"
+
+=> all this user management business works well only within our own network
+    - how do you go outside of the network, how do you collaborate with other companies,
+      suppliers, other branches, ...?
+
+- Federation Services
+    - trusting the users and their permissions created by some other company
+    - e.g. login using facebook or google account
+    - they are trusting users defined by google and facebook
+
+- Security Assertion Markup Language (SAML)
+    - these two networks (e.g. facebook and some other network that allows facebook users)
+      need to somehow communicate the user identities, some protocol
+    - based on XML
+    - describes identity information
+    - over HTTP/HTTPS or sometimes SOAP
+    - we need to trust the received information -> digital signatures
+
+- OAuth & OpenID Connect
+    - identity federation over the web
+    - for applications running in the cloud or simply over the internet
+        - these applications expose an API (application programming interface)
+        - APIs are leveraged by third-party tools or other applications in order to be able
+          to exchange data between applications
+        - mostly REST API
+    - OAuth protocol implements all of this API authentication
+        - lets you share user profiles between web apps
+        - user can login in a web app using an external identity provider
+        - web app never receives the user's password but trusts the IdP (identity provider)
+        - communicates authorization
+            - doesn't exactly authenticate
+            - authentication happens at google or facebook
+            - the other website trusts google as an identity provider
+        - based on authentication "flows" -> more complicated
+            - different flow between a user and a web application or between two web apps
+        - JSON
+    - OpenID Connect
+        - an OAuth token might be generated by on person and used by another, OAuth has no
+          method of differentiating between them, OAuth has not authentication knowledge
+        - authentication protocol
+        - can be implemented as a type of an OAuth flow, so while OAuth does not support
+          authentication out of the box, it can be extended with OpenID Connect for that
+
+- Identity and Personnel Policies
+    - you need proper authorization policies in the real world, outside the digital life
+    - Acceptable Use Policies: list of acceptable actions that an employee can perform
+        - especially with company devices (e.g. no pirate software)
+        - also referred to as Code of Conduct (CoC)
+    - Security Awareness
+        - should apply to all users, not only to IT engineers
+        - security policy understanding
+        - incident management and reporting
+        - security procedures
+        - password policies
+        - data protection policies
+        - anti-social engineering trainings (e.g. phishing campaigns, trainings)
+        - anti-privacy awareness
