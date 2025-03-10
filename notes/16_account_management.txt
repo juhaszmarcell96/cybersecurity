@@ -1,0 +1,188 @@
+Account Management
+------------------
+
+=> managing the digital identities of users
+    - gathering information
+    - store that information
+    - privilege changes
+    - leaving employees
+    - ...
+
+- role of HR
+    - HR provides the necessary information for a digital identity of joining employees
+    - HR does background checks and creates a profile even before the hiring process is over
+    - during onboarding:
+        - provide credentials (cards, keys, ...)
+        - provide devices (phones, laptops, ...)
+        - provide training (security training, ...)
+    - during normal business operations
+        - disseminate security policies
+        - they make sure that employees are informed about changes in policies
+    - during termination
+        - disable credentials (usually not deleted, just disabled)
+        - retrieve devices
+
+- personnel security
+    - involvement of the employees within the company's security policies
+    - collaboration between HR and IT
+    - goal: to avoid employees abusing their privileges to perform unauthorized actions or to
+            gain some personal advantage
+    - policies:
+        - separation of duties
+            - sharing responsibility among multiple people so that a single one cannot abuse
+              the system
+            - trying to avoid insider threats
+            - SOP (standard operating procedure): a document that contains the job role of the
+              employees
+            - as long as no one derails from the SOP, everything should be fine
+            - e.g. approval process - action approved by someone else
+        - least privilege
+            - applies not only to persons, but to services and software as well
+            - you get the least possible privileges, only sufficient to do your job but no
+              more than that
+            - also to limit the access of potentially compromised accounts
+            - should also be managed when employees switch roles, people should not retain the
+              privileges of their old department
+        - job rotation
+            - one person should hold the same job for a limited amount of time
+            - knowledge is then not constrained to a single person, but a team
+            - lowers the chance of abuse of credentials, because there are other people
+              knowing about what you do
+        - mandatory vacation
+            - another person takes your job for a limited amount of time so that you cannot
+              hide malicious activity
+            - also good for detecting that the hired person is not doing their job properly
+
+- offboarding policies
+    - when an employee leaves the company
+    - manage accounts (including shared accounts)
+        - disable accounts
+        - change passwords for shared accounts (don't use shared accounts...)
+    - user encrypted data
+        - what do you do if you need to access that data as an employer some time in the
+          future, maybe for an investigation about malicious activities
+        - keep the private keys of that user in a database
+    - physical assets
+        - laptop, phone, keys, cards, ...
+        - make sure that the user has no backup of that data
+    => never a 0% risk when someone is leaving the company
+
+- types of accounts
+    - generic users
+        - not able to change policies
+        - least privilege
+    - guest accounts
+        - anonymous login
+        - LEAST privilege, almost next to none (only maybe regulated internet access)
+        - consider disabling (do you really need it?)
+        - come with a lot of security risks
+    - administrator accounts
+        - first target of attacks
+        - secure credentials, should be bulletproof
+        - can alter security policies
+        - if an attacker gets their hand on an admin account, they might be clever enough not
+          to use it for attacks but for lowering security policies or creating users
+    - shared accounts
+        - these are the worst
+        - login credentials are known by a number of people
+        - no identity information
+        - no non-repudiation (no unique identification)
+        - no credential security
+    - generic admin accounts
+        - e.g. admin:admin default accounts pre-configured for devices
+        - built into systems by default
+        - lot of people don't change the passwords
+        - often targeted by attackers
+
+- group-based policies
+    - assigning policies to groups instead of individual users
+    - what servers, URLs, applications, file servers, ... can they access?
+    -> assigning these on an individual user bases is not very efficient and is risky
+    - users become members of security groups
+        - developers
+        - database admins
+        - security testers
+        - ...
+    - users inherit the permissions of the groups they are members of
+        - makes user and permission management easier
+    - a user can be a member of multiple groups
+    - default security groups
+        - most operating systems has these
+        - e.g. USERS on windows
+        - e.g. on Linux, there are user groups that users can be members of, and a special
+               group is the sudoers, who have super user access (/etc/sudoers)
+
+- Windows and Linux service accounts
+    - service accounts = "machine" accounts (on Windows)
+        - services use these accounts, e.g. a server that wants to connect to a database
+        - system: ultimate account on Windows
+        - local service: similar to a regular user account, but is used by services
+        - network service: can authenticate itself over the network, has network privileges
+    - on Linux, this is simples
+        - every user looks the same, service accounts are no different from normal user
+          accounts either
+        - only difference: service accounts usually don't allow an interactive shell
+        - these accounts are created automatically when installing packages
+            - e.g. an apache user gets created, but you cannot log in as that account
+
+- Linux Secure Shell (SSH) Keys
+    - used for remote CLI access, file transfer (scp) and tunneling
+    - secure connection remotely, over a non-secure channel
+    - SSH tunneling means transporting arbitrary data over an encrypted SSH connection
+    - SSH relies on 2 key pairs
+        - server has one (host key), presents the public key to the client
+        - user first uploads their public key to the server's database
+            - if later traffic comes in that is encrypted with a private key that corresponds
+              to one of the public keys in the database, then that connection is going to be
+              allowed
+
+- Third-Party Credentials
+    - used for managing applications through APIs
+    - used with cloud provides as well
+    - e.g. the key that you are generating into the cloud console that allows you to access
+           cloud resources
+    - those keys need to be kept secret
+
+- account policies
+    - what a user can and cannot do
+    - digital identity: set of digital information that makes up a digital profile
+        - full name
+        - email address
+        - department
+        - unique ID
+    - access policy: actual set of resources that the user has access to
+        - individual or groups membership
+        - on Windows, this is done through GPO (group policy object)
+            - can be used to configure privileges for both users and groups in a Windows
+              active directory system
+    - password policies
+        - length
+        - complexity
+        - change frequency
+        - reuse?
+    - location-based policies (physical) -> dangerous countries
+    - location-based policies (network) -> untrusted networks, or an IP address can be
+                                           correlated to a region as well
+    - time-based policies -> when and how long can a user access some resources
+
+- not an easy task...
+    => too many privileges
+    => too many restrictions
+    - both are problematic
+    - privilege review: auditing process for the security policies
+
+- account usage audits
+    - audit for user activity
+    - recording key activity indicators
+        - login
+        - resource access
+        - process creation
+        - policy changes
+        - settings changes
+        - privilege escalation
+    - log events => where did a breach come from, who attacked, who caused it, ...
+
+- Disabling Accounts
+    - account disabling: not working here anymore, malicious activity
+    - account expiration: temporary accounts e.g. for external users from other companies
+    - account lockout: e.g. automatic reaction when malicious activity is detected
