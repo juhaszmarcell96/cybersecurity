@@ -1,0 +1,319 @@
+Identity, Access Management & Password Cracking
+-----------------------------------------------
+
+=> Identity and Access Management (IAM)
+    - many implementations and solutions
+    - local, cloud, ...
+    - storing usernames and other user-related information
+    - managing the permissions of users once they are authenticated
+
+- AAA ("Triple A")
+    - Identification: not strictly part of AAA, but first you need to provide some unique
+      piece of information that uniquely identifies you as a user, it does not yet prove who
+      you are, it does not prove that you actually own that identity, but it is the identity
+      that you claim belongs to you
+        - provide a username, phone number, email address
+    - Authentication: additional unique information proving that the identity that you claimed
+      is in fact owned by you
+        - password, private key
+        - sometimes written as "AuthN"
+    - Authorization: you are automatically assigned some privileges, assigned by a centralized
+      system, policies, permissions
+        - sometimes written as "AuthZ"
+    - Accounting: monitoring the actions of the logged-in users, what are they doing, what
+      resources are the accessing, statistics collection
+    => subject: the one who initiates the action (you, an application, a machine)
+    => objects: the resources that you are interacting with
+
+- Multi-Factor Authentication
+    - 2FA, MFA
+    - an authentication factor is e.g. you providing a password
+    - authentication factors:
+        - something you know (password, private key, passphrases, PIN, swipe pattern,
+          verification questions, birthplace, mother's name)
+        - something you have (security device, smart card, key)
+        - something you are (biometric data, retinal scan, fingerprint, iris scan, DNA)
+    - in order to increase the security -> combine multiple factors
+    - 2FA : not enough the have two factors, they should also belong to different categories
+        - password with PIN is not 2FA
+        - password and a random password generator: this is good, the password is something
+          that you know, the random password is generated e.g. by an application on your
+          phone, this is the factor that you have
+
+- authentication attributes
+    - something you ARE
+        - location of the user or the device -> GPS or IP address
+        - provide a device with fewer privileges if it is connecter through an unsecure
+          network
+        - you can also differentiate between different countries
+    - something you DO:
+        - monitoring the actions of a user, what webpages do they visit
+    - someway you BEHAVE:
+        - behavioral authentication
+        - after a user passed the authentication process, the behavior can be monitored, the
+          way they type, the way they sign, ... -> cut access
+        - monitors HOW a user does things, and not what they are doing
+    - somebody that trusts you:
+        - people who can vouch for you
+        - web of trust without a centralized infrastructure
+        - PGP (Pretty Good Privacy)
+
+- Authentication in Computer Systems
+    - mostly "knowledge-based" -> password, PIN
+    - Windows and Linux: we have dedicated subsystems that deal with authentication and login
+    - sign-in types
+        - local
+            - check the password against a local database of password hashes
+            - local security authority checks your credentials
+                - Windows: Security Account Manager (SAM) database
+        - network
+            - credentials are validated against a centralized, network-connected database
+            - e.g. Kerberos - a computer-network authentication protocol
+        - remote
+            - user is outside the local network, connecting through e.g. VPN or through a web
+              server service
+
+- Kerberos
+    - number one authentication system in Windows networks, also the number one single sign-on
+      service available on Windows domains
+        - single sign-on: instead of requesting access to each and every resource that you
+          want to access, you can present your credentials only once and you get a temporary
+          pass that allows you access to all the related services within the same network
+    - Active Directory authentication and authorization system
+    - 3 components
+        - Principal: the user requesting access to some service, this is the one that needs to
+          be authenticated
+        - Key Distribution Center (KDC): major component of Kerberos, this is where the
+          credentials are presented and where the permissions are coming from
+            - Authentication Service
+            - Ticket-Granting Service (TGS)
+        - Application Server (AS): the actual resource that the Principal wants to access
+    - simplified explanation
+        - the principal sends a logon request to the KDC
+            - when you login to a Windows laptop, the laptop contacts the KDC and sends the
+              logon request (user identity, password, etc.)
+        - the Authentication service in the KDC evaluates the logon request
+        - KDC replies with a TGT (Ticket Granting Ticket)
+            - just a proof that you have been authenticated for the domain, it does not grant
+              access to anything, but it allows you to further request access to specific
+              resources
+            - has a default lifetime of about 8 to 10 hours (workday length)
+        -> at this point you can consider yourself authenticated
+        - when the principal tries to access the application server, the first thing it does
+          is that it talks to the Ticket-Granting Service in the KDC
+            - presents it's TGT, the resource that it wants to access, a timestamp, client ID
+            - the TGT checks the TGT validity, the timestamp, the unique ID, ...
+            - TGS replies back with a Service Ticket (ST)
+                - this ST is the one that grants access to the Application Server
+        - the principal presents the ST - signed by the KDC - to the Application Server
+        - the AS validates the ST by talking to the KDC and sends an OK to the Principal
+    - works on port 88 on both TCP and UDP
+    - Kerberos is sometimes a single point of failure, holds every access, ...
+    - Kerberos is strongly dependent on correct time being set on every device that is part of
+      the Kerberos process (timestamp is validated in every step)
+
+- PAP, CHAP, MS-CHAP
+    - Kerberos only works from within the local network
+    - remote access?
+    - PAP : Password Authentication Protocol
+        - very old (developed in the age of dial-up)
+        - simply send the username and the password in clear text
+        - basic auth in HTTP
+        - can still be used is the exchange happens over an already secured channel, like VPN
+    - CHAP : Challenge Handshake Authentication Protocol
+        - relies an encrypted exchange based on a challenge
+        - server sends challenge to the client
+            - challenge is just a randomly generated value
+        - client responds with a hash
+            - challenge plus a predefined secret key or password that you both already know
+        - re-challenge periodically (anti-replay)
+        - a bit more secure...
+        - MS-CHAPv2 (Microsoft version of CHAP)
+
+- Cracking Passwords
+    - plaintext attacks
+        - password sniffing
+        - unencrypted protocols
+        - unencrypted password databases
+        - maybe passwords are stored in application code
+    - online attacks
+        - you are actually dynamically interacting with the authentication server to crack
+          a password
+        - trying a large number of different passwords
+        - takes a huge amount of time (so long that it is impossible)
+        - easily detected from logs or security events -> you will be blocklisted
+    - offline attacks
+        - ideal attack against passwords
+        - rely on compromised hash databases of passwords
+        - if an attacker gets their hand on such a database of hashed passwords, then the
+          attacker can take this database try to recompute the inputs that generate those
+          hashes
+    - password spraying
+        - trying to crack the password for a specific username can be hard
+        - password spraying means to start with a simple password, like "password123" and then
+          trying to find the user in the company who is not that security conscious and uses
+          this password
+    - brute-force attacks
+        - trying every possible password (online or offline)
+        - takes a long time, but guarantees success
+    - dictionary attacks
+        - dictionary lists are files that contain the most frequently used passwords or small
+          combinations (adding some digits or special characters)
+        - it takes much less time to try e.g. every 7 letter word from this list then to try
+          every possible 7 letter combination
+        - but it does not guarantee success
+    - rainbow tables
+        - precalculated databases of hashes
+        - somebody takes the time and resources to generate all the possible hashes for all
+          the possible inputs
+        - when an attacker gets their hand on a password hash database, they can simply search
+          for the hash in the rainbow table and find the corresponding password
+        - searching in a database is fast
+        - can be mitigated using password salting
+            - the salt does not even have to be secret
+            - attackers cannot use the rainbow table unless it was precalculated with your
+              salt added to the passwords
+- hashcat -> linux software used for cracking hashed passwords
+    - some word lists can be found under /usr/share/wordlists on Kali
+    - e.g. rockyou.txt -> is probably worth a try, if it is not preinstalled, download it
+
+- Password Management, Securing Passwords
+    - how to securely store it, how to secure it when it is transmitted?
+    - password storage is a large security risk when it is left in the users' hands
+        - reusing same password
+        - weak passwords
+        - sharing accounts
+    => password managers
+        - generating unique and secure password for each and every service you are using
+        - store passwords in a secure way
+    - how password managers store the passwords?
+        - password keys (USB, NFC)
+            - can be an actual physical key
+        - password vaults (software or hardware)
+            - locally or in the cloud
+            - can be combined with an actual physical key
+
+- Authentication Technologies and Key Management
+    - smart cards
+        - small cryptographic processor
+        - stores the certificate of the user along with the private key that wa used to
+          generate the certificate
+        - you have to guard these, like a key
+        - you need a device that is able to use this key
+    - USB keys
+        - USB device, similar to a smart card
+    - TPM chips (Trusted Platform Module)
+        - cannot be stolen
+        - chip embedded in your motherboard, in your mobile devices, PC, laptop, ...
+        - very secure area, interactions are limited
+        - can generate a certificate, a randomly generated key
+    - HSM (Hardware Security Module)
+        - can be installed into servers
+        - dedicated type of equipment
+        - same purpose as the others
+        - not tied to the server, can be plugged in and out
+
+- The authentication technologies discussed so far assume that the device is already connected
+  to the network and the user is the last entity that needs to authenticate. But there are
+  situations where we need to provide authentication for users connecting to the network.
+    - sometimes as easy as plugging in a network cable
+    - wireless access points
+    - remote VPN connections
+    => EAP (Extensible Authentication Protocol)
+        - actually is a suite of protocols -> framework
+        - wrapper for multiple authentication methods
+        - passwords, certificates, one-time tokens, biometrics, SIM cards, ...
+    => 802.1X Network Access Control (Port-Based)
+        - protocol that selects which authentication method is going to be used within this
+          EAP framework
+        - Supplicant: device requesting access
+        - Authenticator: device through which you get to access the network, decides whether
+          you receive access to the network
+            - cable -> switch
+            - wireless -> access point
+            - VPN -> VPN endpoint
+        - Authentication Server (AAA Server - Authentication, Authorization, Accounting)
+            - contains the user database
+        - supplicant sends the authentication credentials to the authenticator, which then
+          contacts the authentication server to check if the credentials are valid => if it
+          is, then the authenticator unblocks the port through which that device is attempting
+          to access the network
+        - a blocked port allows only authentication traffic
+        - we can implement authentication policies at the edge of the network but store the
+          database in a centralized location
+
+- authentication protocols
+    - RADIUS (Remote Authentication Dial-in User Service)
+        - encrypts only authentication data
+        - accounting is not a separate function
+        - UDP 1812, 1813
+        - supplicant sends an EAP packet to the authenticator, which encapsulates it in a
+          RADIUS packet
+        - can also be used for monitoring user actions
+    - TACACS+ (Terminal Access Controller Access-Control System Plus)
+        - encrypts all data, not just an authentication data
+        - separate AAA functions
+            - you can do per command authorization
+        - used for management access to networked devices (e.g. CLI command authorization)
+        - TCP 49
+        - mostly used with admin accounts -> commands, settings, ... are confidential as well
+
+- one-time passwords
+    - software that generates unique passwords
+    - hash (seed value + secret)
+        - seed ensures the uniqueness of the password
+    - the one-time password generator and the authentication server should be configured with
+      the same shared secret
+        - can be delivered as a string or as a QR code (like on whatsapp when you need to scan
+          a QR code, it becomes the seed for the generator)
+    - if the seed is also combined with a counter -> HOTP (HMAC-based One-Time Password)
+        - counter is incremented with each new password generate request
+    - the other method is time-based -> TOPT (Time-based One-Time Password)
+        - the password is generated (using the shared secret and) using the time as the seed
+        - these are the one-time passwords that are valid for around a minute or so
+    -> also known as out-of-band verification or 2-step verification
+        - they send you a one-time code per SMS or email
+        - or microsoft authenticator
+
+- biometric authentication
+    - iris, retina, fingerprint, signature, ...
+    - relying solely on biometric authentication is not recommended, it is never going to be
+      a 100% foolproof
+    - FRR: false rejection (error) rate (type 1 error)
+        - rate -> how often it happens
+        - the system fails to identify an authorized person
+        - not a security risk
+    - FAR: false acceptance (error) rate (type 2 error)
+        - unauthorized access is identified as an authorized person
+        - this is a security concern
+    - these error rates can be corrected over time with fine-tuning
+    - multiple features can be used
+    - CER/EER: Crossover Error Rate / Equal Error Rate
+        - where FRR and FAR meet
+        - the stricter the security, the higher the FRR and lower the FAR, and vice-versa
+        -> this is the sweet spot, it is fine-tuned for this
+    - issues:
+        - reliability: beard, haircut, glasses, finger position, ...
+        - privacy: your features are stored in a database
+        - cost: these devices are expensive
+        - accessibility: not all people can use all of these methods
+
+- types
+    - fingerprint
+        - most common
+        - cheapest
+        - can be fooled by a high-resolution scan of a fingerprint, or even by a mold
+        -> palm scanners scan your entire hand including the blood vessels, but they are more
+           expensive
+    - face/eye recognition
+        - can be a simple image recognition
+        - can be 3D model of your face -> harder to fool
+        - can scan iris or retina
+        -> scans features that generally don't change over your life
+        - iris scan can be fooled by a high-resolution scan
+        - retina requires infrared scanning, because it scans the back of your eye
+    - behavioral recognition
+        - the way you talks, writes, ...
+        - produce a lot of errors -> used as continuous authentication after you are already
+          logged in (monitoring) -> might cut off your connection of you are suspicious
+        
