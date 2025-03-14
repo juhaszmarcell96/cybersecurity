@@ -1,0 +1,195 @@
+Switching and Routing Security
+------------------------------
+
+- back in the days, most protocols were not designed with security in mind
+- not all security functions require dedicated devices
+    - both switches and routers can implement low-level but effective security functions
+    - not enabled by default
+
+- layer 2 security features
+    1. eavesdropping and intercepting traffic
+        - layer 2 is inherently susceptible to eavesdropping because:
+            - devices like switches forward frames based on MAC addresses, trusting the source
+              and destination data without verification
+            - protocols like ARP lack security mechanisms
+        - man-in-the-middle (MITM) attacks
+            - definition: attacker positions themselves between source and destination,
+              intercepting or modifying traffic
+                - on-path attack
+            - example scenarios:
+                - replying to a DNS request with a fake website's IP address
+                - intercepting login credentials on an unencrypted network
+                - modifying financial data during transmission
+            - prevention:
+                - encryption (e.g., HTTPPS, VPN)
+                - securing ARP to prevent spoofing (discussed below)
+    2. MAC address spoofing
+        - most common MITM attack on layer 2 (= within a single subnet)
+        - definition: attacker fakes their MAC address to impersonate another device
+        - also called MAC cloning when it is about stealing some else's MAC address
+        - how it works:
+            - attacker sends spoofed frames, pretending to be the legitimate device
+            - switch updates its CAM (content addressable memory) table to associate the
+              attacker's port with the legitimate device's MAC
+        - impact:
+            - traffic meant for the legitimate device is redirected to the attacker
+        - tools: MAC spoofing tools are widely available, making this attack accessible even
+          to non-experts
+        - mitigation strategies
+            - port security (sticky MAC):
+                - restricts the number of MAC addresses on a port
+                - dynamically learns and locks the first MAC address seen on each port
+                - example: a port can be configured to allow only one or two MAC addresses,
+                  sufficient for a desktop and a voip phone
+            - MAC filtering:
+                - manually specify allowed MAC addresses for each port
+                - limitation: labor-intensive and ineffective against spoofing
+    3. ARP spoofing (ARP poisoning)
+        - ARP is inherently insecure
+        - definition: exploits ARP's lack of authentication to send fake ARP replies
+            - inject false ARP information in network hosts' ARP tables
+            - a host can learn from an ARP reply even if it was not the one who sent the
+              request to begin with (ARP is stateless)
+        - mechanism:
+            - attacker sends unsolicited ARP replies with incorrect MAC-IP mappings
+            - devices update their ARP tables with false information, redirecting traffic to
+              the attacker
+        - example:
+            - attacker impersonates the default gateway, capturing all outbound internet
+              traffic
+            - most commonly attackers present themselves as the default gateway, every packet
+              meant for the internet goes through it and is rerouted to the actual gateway so
+              that it can inspect the whole communication
+        - tools: common tools include Ettercap, Dsniff, and ARPspoof, metasploit
+        - mitigation strategies
+            - DHCP snooping and dynamic ARP inspection (DAI):
+                - DHCP snooping: monitors DHCP traffic to map MAC-IP-port bindings
+                - DAI: inspects ARP packets and compares them against the DHCP snooping
+                  database, rejecting spoofed packets
+            - network segmentation:
+                - use VLANs to isolate critical devices and minimize ARP spoofing risk
+    4. CAM table overflow
+        - switches use the CAM table to forward traffic to the right port
+        - overwhelms a switch's memory with fake MAC addresses, forcing it to broadcast all
+          frames
+        - when the CAM table is full, but the requested MAC address is not in the table, the
+          switch starts to flood information through every port again, because it cannot learn
+          any more new information -> transforms any unicast to broadcast
+            - you as an attacker fill the switch's CAM table with bogus information, then you
+              also receive every message, since they are turned into broadcast messages
+        - impact:
+            - converts unicast traffic into broadcast traffic
+            - allows attackers to intercept all traffic within the VLAN
+        - mitigation:
+            - enable port security to limit the number of MAC addresses a port can learn
+            - use managed switches with adequate memory
+    5. spanning tree protocol (STP) attacks
+        - loop: layer 2 switches are connected in a cycle
+            - physical loops are good, it is fault-tolerant, there are alternate paths
+        - logical loops are not so good, there is no loop prevention mechanism in the
+            Ethernet header, no time-to-live or anything else
+            - you need to rely on other protocols to manage loops
+            - STP (spanning tree protocol) runs between L2 switches, whenever a physical
+                loop is detected, switches automatically shut down certain interfaces to
+                prevent a logical loop
+        - STP packets are called bridge protocol data units (BPDUs)
+            - small packets based on which they decide what ports to shut down
+            - STP is old, no security
+            - attacker can present themselves as a switch and they can fool the other switches
+            - attackers could change the actual topology of the active switches
+                - the attacker poses as a switch and adjusts the topology so that traffic
+                  flows through their machine (root switch)
+        - mitigation:
+            - enable BPDU guard on ports not connected to other switches
+                - some ports are configured to reject BPDU packets
+                - ports that are connected to workstations and not to other switches should
+                  not receive any STP traffic
+    6. broadcast storms
+        - a switch forwards broadcast messages to all other ports by default
+        - an attacker could attack the STP infrastructure and intentionally create a loop
+          inside the network -> broadcast messages are looping indefinitely
+            -> high CPU utilization, link saturation -> denial of service attack
+        - excessive broadcast traffic overwhelms the network, often due to loops or intentional flooding
+        - mitigation:
+            - enable broadcast storm control: monitors and caps broadcast traffic thresholds
+                - if it sees looping packets, it shuts down the port or blocks the MAC address
+
+- filtering traffic at layer 2?
+    - can only filter based on MAC addresses
+    - MAC access list = list of MAC addresses that are allowed to communicate through a given
+      port
+    - MAC address filtering = global for the switch, defines the allowed devices on the
+      network, only the allowed devices can send packets through that switch
+    - can also define a block list, who are explicitly not allowed on the network
+        - not practical, MAC address spoofing is easy
+    - MAC filtering requires frequent maintenance
+    - port security: automatically manages the allowed MAC addresses onto the switch
+        - switch looks at the first MAC address on a port after startup
+        - it stores that first MAC address
+        - no other MAC address is allowed on that port
+        - hopefully the attacker is not already in the network
+        - this is not stored in the CAM table, but in permanent memory
+        - you can increase this limit, allowing two or three MAC addresses for a port
+        - also called a "sticky" MAC address implementation
+        - used against MAC address spoofing
+        - is not effective against ARP spoofing
+    - ARP spoofing can be mitigated using DHCP snooping (DAI = Dynamic ARP Inspection)
+        - DHCP traffic can be used to see who is connected to which port
+        - switch can be configured to look at this traffic
+            - the switch builds a database about who is connected to which port
+        - when DAI is enabled, the switch also looks at ARP packets
+            - can identify ARP spoofing
+            - the attacker announces themselves with another MAC address than it was
+              originally detected with on that port
+            - switch can deny traffic
+    => this functionality is built into many switches today, but is not configured
+
+- network access control (NAC) / network access protection (NAP) / 802.1X
+    - securing switchport access
+    - generic authentication
+    - a kind of protocol that can be implemented at a switchport level
+    - we can configure a switchport to make it mandatory for whoever connects to that
+      switchport to present some sort of authentication information before being allowed to
+      communicate through the port (works the same also for wireless switching)
+    - EAP over LAN (extensible authentication protocol)
+        - can carry authentication information between switch and device
+        - username, password, smart card, one-time password, certificate, ...
+    - the switches that support EAP over LAN need to access an external database
+        - AAA server (RADIUS, LDAP, active directory)
+        - the switches talk to the AAA server and dynamically reconfigure the ports based on
+          the answer
+    - posture assessment
+        - not just looking at credentials, but also at the actual device
+            - Windows, Linux, Mac, ...
+            - updates?
+            - antivirus?
+            - ...
+        => only allow legitimate and safe devices
+        - lot of admin effort, but after it is put into place, it is fully automatic
+        - to find out all of this information, the switch communicates with a specific
+          software installed on your host, also a proof that you are part of the network
+
+- securing routing information (L3)
+    - routers are just computers running some software or firmware
+    - they have bugs and potential exploits
+    - other risks:
+        - unauthorized information injection
+            - by default routing protocols do not enforce authentication requirements
+            - anyone can send routing information
+            - the protocols have authentication mechanisms that require the sender to sign
+              the information that they are sending
+            - based on password or secret key
+        - routing update sniffing
+            - intercepting routing updates
+            - routing information is transferred from one router to the other
+                - usually in clear text
+                - attackers can intercept it, they can find out a lot about the topology and
+                  the devices
+        - source routing
+            - routing usually happens by looking at the destination IP address
+            - certain options in the IP header can enable source routing
+                - it can tell the router over which hops the packet is supposed to be sent
+                - packet comes preconfigured with the route
+                - not enabled by default
+                - if enabled, attackers can redirect messages through them
+                - not that important since it is disabled in routers by default nowadays
