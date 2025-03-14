@@ -1,0 +1,290 @@
+Securing Wireless
+-----------------
+
+- on one hand, securing wireless networks sounds simple
+    - same protocols
+    - same MAC addresses
+    - same routing based on IP addresses
+    - same applications as on wired networks
+- on the other hand, it is not simple
+    - everyone can intercept the traffic
+    - attackers don't have to get inside the building, server room, ...
+    - attackers only need to be physically close
+
+- wireless network design
+    - where are the access points
+    - how are the antennas oriented
+    - what coverage do the APs offer, do we want close to zero signal leakage outside of the
+      business area
+    - the further you are, the weaker the signal, lower the speed, higher the error rate
+    - what are the walls made of, can they be penetrated by signals
+    - interference -> many devices use the same wireless frequencies
+
+- access point (AP)
+    - device that you are connecting to wirelessly in order to gain access to the network
+    - wireless switch
+    - BSSID (basic service set identifier) : access point's MAC address
+    - SSID : network's "name"
+
+- wireless communication is just a bunch of standards specifying
+    - what frequencies you are allowed to use
+    - how are the frames transmitted
+    - what security you can and should use
+
+=> protocols are mainly differentiated based on the frequency
+    - 802.11b/g/n/ax -> 2.4GHz
+    - 802.11a/h/j/n/ac/ax -> 5GHz
+
+- the frequency bands are split into channels
+    - goal is to allow parallel connections for higher data rates
+    - size of these channels depend on the standard
+    - there are multiple overlapping channels, e.g. 14 channels for the 2.4GHz range
+    - however, these are overlapping channels, only a couple non-overlapping channels can be
+      used at the same time
+        - e.g. one device can use channels 1, 6 and 11 without overlap
+        - co-channel interference is when two devices try to communicate over the same channel
+            - of course layer 1 and 2 protocols prevent devices communicating over the same
+              channel
+        - adjacent channel interference: if another device uses an adjacent channel, like
+          channel 2, there will be some interference
+            - fewer errors, but still a noticeable signal degradation
+    - if you properly design your wireless network, such interferences can be avoided
+        - site survey: maps the entire layout of the building, takes the walls and even the
+          materials into account
+            - a person walks in the building and measures the signal strength
+            - if it is not sufficient, access points might be placed elsewhere, antennas might
+              get re-oriented, ...
+            - produces a heat-map: colorful representation of the signal strength
+
+- wireless LAN controller (WLC)
+    - centralized management for wireless access points
+    - 1 or 2 APs are easy to manage individually, but managing 100+ APs is hard and poses
+      security risks
+    - it is a software app that controls and configures the access points
+    - it pushes the configurations to all of the APs
+    - also, all of the traffic coming through the APs is routed through the WLC
+    => it is a centralized point of traffic and configuration
+    - it is a wired device, it is connected to the wired network and also the wireless APs are
+      connected to it with wires, it is called wireless because it controls the wireless APs
+    - WLC security is very important, even more important than that of APs
+
+- security protocols
+    - man-in-the-middle in wireless is almost no man-in-the-middle at all, because everyone
+      can listen to the traffic
+    => WEP & WPA
+    - goal: encryption, authentication, key handling, key rotation, ...
+    - some of the standards have been deprecated
+        - because of detected flaws
+        - because the current computational capacity of devices makes it possible to crack
+          these algorithms
+    - upgrading the whole wireless infrastructure is not an easy task, because often these
+      protocols are hardcoded into hardware chips of devices
+        => this is one of the major problems with wireless security nowadays, that people are
+           still using these old devices which have known vulnerabilities
+    - WEP (Wired Equivalent Privacy)
+        - one of the first wireless security protocol ever invented
+        - highly unsecure, very weak
+        - don't ever use it, on newer devices WEP is not even an option
+    - WPA (WiFi Protected Access)
+        - v1 : RC4, TKIP
+            - RC4 is an encryption algorithm, also used by WEP, but WPA fixed a few flaws in
+              the original WEP by maintaining the same encryption algorithm -> easier to
+              upgrade older devices
+            - TKIP (Temporal Key Integrity Protocol) was designed to provide more secure
+              encryption than the earlier WEP, without needing to replace existing hardware
+            => not secure enough
+        - v2 : AES (128-bit), CCMP
+            - AES (Advanced Encryption Standard) is still in use
+            - CCMP (Counter Mode Cipher Block Chaining Message Authentication Code Protocol)
+                - was designed to defeat replay attacks (replay authentication packets)
+                - by embedding secret information in the packets (packet number and key ID)
+            => even WPAv2 is vulnerable
+        - v3 : AES GCMP, SAE, Enhanced Open, MPF
+            - AES GCMP
+                - upgraded encryption protocol
+                - increased key length, up to 192 bits
+            - SAE (Simultaneous Authentication of Equals)
+                - another type of handshake, the initial exchange of packets
+                - v2 handshake had some vulnerabilities
+                - this is an implementation of the Diffie-Hellman protocol
+            - Enhanced Open
+                - a way to ensure encryption even for clients that use open authentication
+                - before this, if a network was open, meaning no password or any other
+                  credentials were required, there was basically no guarantee for any security
+                  measures, no encryption
+            - MPF (Management Protection Frames)
+                - management frames are special types of frames that were often targeted by
+                  attackers
+                    - they are used to announce specific events in a wireless network
+                    - they were unprotected, unauthenticated (clear text)
+                    - e.g. deauthentication attacks: craft management frames and send them to
+                      access points that you might even not be connected to, to cause
+                      everybody getting deauthenticated, because the access point has no way
+                      of checking that these frames are coming from an actual client
+                - these are not protected
+
+- "personal" WiFi Authentication
+    - for non-enterprise networks
+    - password of "preshared key" (PSK)
+        - also known as group authentication
+        - key has to be shared with everyone who is supposed to connect to the network as well
+          as with the access point
+        - no identity information tied to the password, because everybody uses the same one
+        - right now, keys have to be at least 8 and at most 63 characters
+        - the encryption key is not the one that you have provided as the pre-shared key
+            - your key (password) is put through a process of hashes -> HMAC of 256 bits
+            - Hash-based Message Authentication Code
+            - that is used as the encryption key
+            - this is called key stretching -> you take a smaller key and make a longer key
+              from it using a series of computations
+    => WPA3 personal authentication
+        - no centralized server for authentication
+        - used in smaller offices or at home
+        - PAKE (Password Authenticated Key Exchange)
+            - the process of generating the keys
+        - SAE (Simultaneous Authentication of Equals)
+            - the handshake protocol
+            - WPA2 4-way handshake was vulnerable
+        - Dragonfly: Diffie-Hellman with elliptic curve cryptography
+            - the actual name of the handshake protocol, SAE is a variant of the Dragonfly
+              Key Exchange
+    - WPS (WiFi Protected Setup)
+        - another authentication method for wireless networks
+        - configuring SSIDs, passwords, choosing encryption algorithms is pretty complicated
+        - with a WPS device you can connect to a network by simply pushing a WPS button or by
+          entering a PIN code, all the hassle of setting up an SSID and passphrase is taken
+          care of for you automatically by the device itself
+        - considered insecure, but is still available
+        - if you have access to the router and are trying to connect, you push a button and
+          are automatically connected
+            - when the button is pushed, the key-based authentication shifts to a pin-based
+              authentication
+            - it is just an 8 character pin, usually written on the back of the device
+            - this pin can easily be cracked by brute force
+                - not because it is 8 digits, it is still a lot of combinations
+                - but WPS is designed in a way that the client first sends the first 4 digits
+                  of the 8-digit pin, and the AP replies whether those 4 digits are correct or
+                  not -> only 10000 attempts
+                - then the next 4 digits are sent, of which 3 digits are independent digits,
+                  but the last one is a parity checking digit -> 1000 attempts
+                => 11000 combinations (not 1 billion as the 8 digits would require)
+        - WPS is hardware-dependent
+            - vendors could at most disable it but not upgrade it
+            - make sure that WPS is disabled
+        - WPS was replaced by Easy Connect in WPA3
+            - similar process to registering an IoT device (smart light bulb, ...)
+                - scan a QR code, perform some wireless authentication
+            - Easy Connect allows you to enroll a device simply by scanning a QR code or NFC
+
+- Open Authentication
+    - no authentication
+    - any type of public WiFi, restaurants, hotels
+    - can use Captive Portals: just a pop-up or webpage that shows up whenever you are
+      connecting to that network, making you accept terms and conditions, or making you pay
+      for the internet
+    - in WPA2 traffic is also unencrypted
+        - no confidentiality
+        - not all traffic is unencrypted, like HTTPS or SSH are still encrypted
+    - in WPA3, we have WiFi Enhanced Open using OWE (Opportunistic Wireless Encryption)
+        - using dynamically generated keys
+        - provides confidentiality but still no authentication, still anyone can connect
+
+- 802.1X Authentication
+    - enterprise WiFi Authentication
+    - also knows as WPA2/WPA3 Enterprise
+    - centralized point for managing the authentication
+        - Authentication, Authorization and Accounting server
+            - database holding the user identities and their credentials
+        - Access Point contacts the AAA Server on behalf of the user that wants to connect,
+          grab the user's credentials, send them to the AAA Server and wait for a response
+        - Supplicant > Authenticator > AAA Server
+            - Supplicant: client that wants to connect
+            - Authenticator: the Access Point relaying the authentication information from the
+              supplicant to the AAA server, and then back with the response
+            - AAA Server: RADIUS or TACACS+
+    - EAP (Extensible Authentication Protocol) over Wireless -> EAPoW
+        - a suite of protocols
+        - you can still use shared keys (though you probably don't want to)
+        - you can use digital certificates, smart cards, biometrics, SIM cards, ...
+            - EAP is the wrapper around all of these authentication protocols
+        - EAPoW is the type of protocol that is allowed for unauthenticated users
+            - to send authentication attempts
+            - if a user is rejected by the AAA server, they remain restricted to EAPoW
+
+- EAP (Extensible Authentication Protocol)
+    - different implementations for different authentication methods
+    - umbrella for a multitude of protocols
+    - EAP-TLS
+        - Transport Layer Security
+        - encrypted TLS tunnel between the supplicant and the authentication server
+        - you first present a public key to be validated by the other party
+            - both the supplicant and the authentication server do this art the same time
+            - they are both being authenticated to one-another, they both need to recognize
+              the other
+        - both the client and the server need digital certificates installed in them
+            - a bit difficult to implement in a large-scale network
+    - PEAP (Protected Extensible Authentication Protocol)
+        - again, encrypted TLS tunnel
+        - simpler version of the EAP-TLS, easier to implement
+        - only the server needs a digital certificate
+        - client can use passwords (MS-CHAPv2) or tokens (EAP-GTC)
+            - you need an inner authentication method inside the EAP, such as MS-CHAPv2
+              (Microsoft version of the Challenge-Handshake Authentication Protocol)
+    - EAP-TTLS (EAP with Tunnelled TLS)
+        - wasn't TLS already tunnelled? - yes it was, this is just abusing the language
+        - similar to PEAP, only server-side certificate, the client can choose the method
+            - PEAP only allows for MS-CHAPv2 or EAP-GTC
+            - now the client can use whatever they want as long as it is supported by the EAP
+              scheme (PAP, CHAP, whatever they want, very flexible)
+    - EAP-FAST (EAP Flexible Authentication via Secure Tunnelling)
+        - similar to PEAP
+        - does not use any certificates, but a secure password
+            - PAC (Protected Access Credential), not exactly a pre-shared key, but rather a
+              dynamically generated one using some sort of a Diffie-Hellman implementation
+        - issue with distributing the PAC
+        - issue with no server identity proof, anybody can act as a face access point
+
+- rogue access points
+    - any AP that you don't know about or haven't authorized
+        - accidental or malicious
+    - rogue AP announcing the same SSID as a legitimate one is an "Evil Twin"
+        - man-in-the-middle attack
+        - malicious DNS redirect
+        - phishing attacks
+        - tough to detect, most mobile phones don't even support the function of validating
+          the AP's MAC address
+        - discovery:
+            - physical: look for them and find them
+            - spectrum analyzer: scan for interferences
+
+- WiFi attacks
+    - deauthentication attacks
+        - sending a special type of management frame for deauthenticating clients
+        - to force a re-authentication for intercepting it
+        - to force the client to stop talking to the access point
+        - maybe only for a denial of service (DoS) attack
+    - disassociation attacks
+        - also with spooked management frames
+        - disassociated host is not exactly disconnected, but cannot send traffic until it is
+          associated again
+        - DoS
+    => management frames are protected in WPA3 using MFP
+    - PSK attacks
+        - aim to capture the pre-shared key
+        - hash of the passphrase can be captured during authentication
+        - then run the hash through a rainbow table or an offline cracking algorithm
+        - also called IV (initialization vector) attacks in WEP using replay attack
+            - they relied on a number on every packet called an initialization vector (IV)
+            - IV generation was pretty faulty
+                - you just needed to make the AP generate a lot of new IVs by sending spooked
+                  traffic, and at some point the AP started to recycle the IVs, which revealed
+                  which part of the bit stream is the IV and which part is the encrypted hash
+        - KRACK for WPA
+            - an attack for both WPA and WPA2
+            - exploits the 4-way handshake
+            - this is why WPA3 has a new handshake protocol
+    - jamming attack
+        - you just spam the wireless spectrum so that no one can communicate over the spectrum
+        - DoS attack
+        - can easily be detected
+        - jamming wireless signals is often illegal
