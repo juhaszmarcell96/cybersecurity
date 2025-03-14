@@ -1,0 +1,334 @@
+Securing Networks
+-----------------
+
+- common network design issues
+    - prioritizing Availability over Confidentiality or Integrity
+        - description: networks are often designed with a focus on ensuring continuous
+          availability (business continuity)
+        - problem: security, including integrity and confidentiality, is deprioritized
+        - takeaway: while availability is critical, neglecting security can leave networks
+          exposed to breaches
+    - overreliance on perimeter security
+        - description: traditional security focuses on the network's borders (firewalls, vpn
+          entry points)
+            - preventing people from getting in
+            - this is a design flaw
+        - problem: if attackers bypass perimeter defenses, they gain unrestricted access
+          within the network
+        - solution: modern smarter systems implement a zero-trust model
+            - never assume devices or users inside the network are safe, they might be
+              compromised
+            - continuously verify all activities, even within the network
+    - single points of failure (SPOF)
+        - description: a single device (e.g. a router or firewall) controls access to critical
+          resources
+        - problem: if the device fails or is compromised, the network's availability or
+          security collapses
+            - you either loose access to the resource
+            - or the device "fails open" -> everybody can get through
+            - if it gets compromised, then nothing stops an attack
+        - solution: redundancy and failover mechanisms prevent outages and security lapses
+    - overly complex configurations
+        - description: complex networks create challenges in
+            - managing traffic flows
+            - identifying and fixing issues
+            - even admins might not understand it
+        - impact on security: increased interdependencies and obscure configurations
+            - introduces unforeseen vulnerabilities
+                - even if you have no single point of failure, if the services are too much
+                  dependent on each other, the failure of one can lead to inaccessibility
+    - lack of documentation and change management
+        - description: undocumented network changes or assets create
+            - difficulty in audits
+            - ongoing exposure to risks from forgotten or misconfigured devices
+                - undocumented assets
+                - undocumented services
+                - these undocumented objects will not be included in security updates and
+                  security assessments
+        - solution: maintain up-to-date documentation and enforce change management protocols
+
+- ISO/OSI basic network devices
+    - layer 2 devices (switches, access points):
+        - layer 2 (data link): manages communication within a single network (mac addresses)
+        - forward frames based on mac addresses
+        - extend broadcast domain
+            - a broadcast message stops within the subnet at the gateway
+            - however, broadcast messages can pass through switches -> extend the domain
+        - learns the MAC addresses that it sees -> later when a message comes with a known MAC
+          destination address, it looks into the content addressable memory (CAM) table and
+          finds which ethernet port it is connected to
+            - learns this only by looking at traffic
+            - it receives a frame on port 5 that it has no destination for in the table
+            - on one hand it makes an entry in the table that the source MAC address is
+              connected to port 5
+            - a copy of this message is sent out on every port
+            - the network interface card that has this destination MAC address will likely
+              reply through the same switch heading to the source of the original packet
+            - reply comes on port 6
+            - the switch sees this traffic and adds the entry to the table
+            - now it knows that the that MAC address is connected to port 6
+            => only learns MAC addresses by looking at the source (not the destination)
+            => called Layer 2 forwarding
+    - layer 3 devices (routers):
+        - layer 3 (network): routes traffic between networks using IP addresses
+        - interconnect multiple networks
+        - limit broadcast domains, a layer 3 device is the network boundary
+    - firewalls:
+        - filter traffic based on predefined rules (Access Control Lists, ACLs)
+            - Access Control List: a list of allowed devices, restricted IPs, restricted URLs,
+              excluded devices, closed ports, ...
+        - modern firewalls include deep packet inspection to analyze application-level traffic
+        - not really a separate device, most routers have firewalls built into them, but it is
+          rather a separate functionality
+        - decides whether to allow a certain type of traffic to pass or not
+        - filters based on layer 3 (IP address) and layer 4 (ports)
+        - more modern firewalls have application layer visibility -> analyze the content of
+          the packets, not just the addresses
+    - load balancers:
+        - distribute traffic among servers to prevent overloading
+        - ensure redundancy and session persistence
+        - also called a reverse proxy
+            - forward proxy: a client needs to go outside the network
+            - reverse proxy: clients from the internet trying to reach a resource inside your
+              network -> it is a proxy because everybody needs to go through it
+
+- content addressable memory (CAM) table
+    - CAM table is empty by default
+    - this table is a type of memory where you provide the content to retrieve a memory
+      location, you provide the MAC address to get the memory address that corresponds to the
+      correct port (much faster to search than e.g. linear search)
+    - TCAM (ternary content addressable memory) is found in L3 switches (routers)
+                +-----+------+------+
+                | MAC | port | WLAN |
+                +-----+------+------+
+                |     |      |      |
+                +-----+------+------+
+                |     |      |      |
+
+- switch (layer 2)
+
+                                                            +---+
+                                    +-----------------------| B |
+                                    |                       +---+
+                                  2 |
+            +---+            1 +--------+ 3                 +---+
+            | A |--------------| switch |-------------------| C |
+            +---+              +--------+                   +---+
+                                    | 4
+                                    |                       +---+
+                                    +-----------------------| D |
+                                                            +---+
+    - A sends packet to C
+        - src=A
+        - dst=C
+    - the switch sees this packet, the CAM table is still empty -> the switch sends a copy of
+      this message out on every port (except port 1, the receiving port)
+        - this is also called flooding
+    - at the same time, the switch now knows that host A is located on port 1
+    - the hosts that are not meant to receive this frame will simply discard the message
+    - host C receives the frame and (likely) responds
+        - src=C
+        - dst=A
+    - switch now knows that host C is located on port 3
+    - and it already finds an entry in the CAM table for host A, so it forwards the message
+      to port 1 (no more flooding)
+
+- routers (layer 3)
+    - we usually don't store each and every possible destination, but we summarize these
+      destinations into larger networks into a so-called default route
+    - you don't need to know the location of every host on the internet, you just need to know
+      that whatever is not in your local network is out there -> forward it to the default
+      gateway that leads outside of the network
+    - route types:
+        - connected routes: each interface of a router corresponds to a different network
+        - static routes: can be manually entered by the admin
+        - dynamic routes: learned by a routing protocol
+            - routers learn this information from each other
+            - scalable but more vulnerable than static routing
+
+- Address Resolution Protocol (ARP)
+    - how does host A know the MAC address of host C?
+        - it does not... it needs to find out
+        - host A sends out an ARP packet -> "who has IP address 192.168.0.1?"
+            - you need to know the IP address
+            - you might be connecting to a website -> resolvable URL
+            - you might want to talk to a resolvable hostname in your local network
+            - broadcast message
+        - everybody in the network receives the ARP request
+        - the host with that IP address replies with its MAC address
+            - this is a unicast reply
+    - there is no security built into ARP
+    - we don't know that whoever is replying us actually has that IP address
+    - MAC address is used within the local network, between direct links
+        - if you want to send a message to another host in another network, your packet
+          contains your computer's MAC as the source MAC, and your router's MAC as the
+          destination MAC
+        - your router removes the Ethernet frame and adds a new one where the source MAC is
+          its own MAC and the destination MAC is the MAC of the next hop
+        - at the end of the line, the local router of the other host sends the final packet
+          with its MAC as the source and the host's MAC as the destination
+
+- IPv4 vs. IPv6
+    - IPv4: Limited address space (32-bit)
+    - IPv6: Expanded address space (128-bit) with improved security and efficiency
+    - both are currently in use
+    - IPv4 header:
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        |Version|  IHL  |Type of Service|          Total Length         |
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        |         Identification        |Flags|      Fragment Offset    |
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        |  Time to Live |    Protocol   |         Header Checksum       |
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        |                       Source Address                          |
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        |                    Destination Address                        |
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        |                    Options                    |    Padding    |
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        - Time to Live (TTL) = hop count, decremented by 1 on every hop (usually 64 or 128)
+            -> prevents infinitely looping messages
+        - protocol: upper layer protocol that follows it (TCP or UDP)
+    IPv6 header is ironically more simple
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        |Version| Traffic Class |           Flow Label                  |
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        |         Payload Length        |  Next Header  |   Hop Limit   |
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        |                                                               |
+        +                                                               +
+        |                                                               |
+        +                         Source Address                        +
+        |                                                               |
+        +                                                               +
+        |                                                               |
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        |                                                               |
+        +                                                               +
+        |                                                               |
+        +                      Destination Address                      +
+        |                                                               |
+        +                                                               +
+        |                                                               |
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    - IPv4 address
+                               172  .   16   .  254   .   1          dotted decimal
+                            10101100.00010000.11111110.00000001      binary
+    - IPv6 address
+            0123 : 4567 : 89ab : cdef : 0123 : 4567 : 89ab : cdef    hexadecimal format
+                                          |
+                                 0000 0001 0010 0011
+
+- routing protocols
+    - routing information can come from directly connected networks or from static routes
+    - routers communicate destinations and how to reach these destination
+    - protocols:
+        - RIP (routing information protocol) : most used
+        - OSPF (open shortest path first) : widely used in company networks
+        - BGP (border gateway protocol) : large networks, used by ISP (internet service prov.)
+        - IS-IS
+        - EIGRP
+
+- Network Segmentation
+    - network segment: a region inside of a network where hosts can freely communicate with
+                       each other, usually through a layer 2 addressing method
+        -> through a switch or an access point
+        -> also called subnets or broadcast domains
+    - implement it using routers or layer 3 switches that are the subnet boundaries
+    - VLAN is a layer 3 switch, it is a way of segmenting networks without relying on a router
+        - virtual LAN
+        - we can configure a managed switch to have each port in a specific VLAN
+            - a managed switch is a switch with more capabilities and features
+        - only ports that belong to the same VLAN can freely communicate with each other
+        - every other host needs to go through a layer 3 device (router or L3 switch)
+        - the IP addressing scheme is also adjusted, so VLAN is an actual subnet
+
+- Topology
+    - topology: the way a certain network is designed, how the subnets are organized
+    - building block of a topology: zone
+        - the members of a zone get the same security treatment
+        - the same security policy applies to all members of a zone
+        - e.g. internal network can be one zone, everyone inside the network get the same
+          security treatment
+    - security zones
+        - intranet: internal network
+        - extranet: network that are made up by remote connections that you trust
+            - VPN, other offices, suppliers, ...
+        - internet: filter traffic, don't trust anything
+        - you can define any zone, e.g. wireless zone, or based on the departments
+    - security policy must address the traffic flowing between zones
+
+- demilitarized zone (DMZ)
+    - there are certain situation where certain hosts need to be exposed to the internet
+        - hosting VPN endpoint, web server, email server, ...
+    - these exposed hosts are placed in a special zone called DMZ
+    - strict security policies
+        - to prevent attackers from gaining access to the network through a compromised host
+    - bastion host
+        - a dedicated server specifically designed to withstand cyberattacks and provide
+          secure access to a private network from an untrusted one
+        - positioned strategically at the network perimeter, typically outside a firewall or
+          in a demilitarized zone
+        - accept coming connections from the internet, authenticates the users, authorizes
+          them and provides access to the rest of the network
+    - possible topologies
+        - screened subnet
+            - between LAN and internet, you have two firewalls (FW)
+            - between the two firewalls, there is the DMZ
+            - the entire subnet between the two firewalls (the DMZ) is a screened subnet
+            - can be implemented on one machine with two different firewall contexts
+
+        +-----+          +----+       +-----+       +----+          +----------+
+        | LAN |----------| FW |-------| DMZ |-------| FW |----------| internet |
+        +-----+          +----+       +-----+       +----+          +----------+
+
+        - three-legged firewall
+            - probably the most common
+            - separate interface on the firewall that holds the DMZ services
+
+                                +-----+
+                                | DMZ |
+                                +-----+
+                                    |
+                +-----+          +----+          +----------+
+                | LAN |----------| FW |----------| internet |
+                +-----+          +----+          +----------+
+        
+        - screened host
+            - cheapest
+            - router (R) connects to the internet
+            - screened host (SH) is behind the router
+            - on the router we probably have some port forwarding rules that allow specific
+              connections to reach this screened host
+            - used in small networks, where only an email or web server needs to be exposed
+            - not a true DMZ, usually implemented if the router has no DMZ functionality
+
+            +-----+          +----+       +---+          +----------+
+            | LAN |----------| SH |-------| R |----------| internet |
+            +-----+          +----+       +---+          +----------+
+
+- network security design
+    - IPv6 policies
+        - policies that apply to IPv4 should apply to IPv6 as well
+        - services, applications, devices, etc, usually come with IPv6 enabled but not
+          configured -> don't forget about it
+        - default configurations are usually very permissive
+    - east-west traffic and north-south traffic
+        - north-south traffic: network traffic that enters or exits an organization's internal
+          network
+        - east-west traffic: the flow of data packets between servers within a data center
+        - east-west traffic stays inside of the data center, you loose track of what is going
+          on inside, which virtual machines are communication with which other virtual
+          machines, which data bases, storage appliances
+        - if one component becomes compromised, you might not be able to see the extent that
+          compromise is going to affect the entire network, because you might only look at
+          north-south traffic
+        => don't forget about east-west traffic
+    - zero trust
+        - you don't trust a device or service just because they are located within the network
+          perimeter, because it might be a compromised host
+        - don't rely only on perimeter security only
+        => continuous monitoring even inside the network
+            - who is communicating with whom
+            - what services are running
+            - when do communications take place
