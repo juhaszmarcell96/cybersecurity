@@ -1,0 +1,221 @@
+DDoS Attacks and Connection Balancing
+-------------------------------------
+
+- you want to run tour web application on multiple servers
+    - to avoid single point of failure
+    - one single server might not be capable of handling the load
+    => server farm: multiple servers configured identically
+        - yoo also need a device in front of the servers that receives the connections from
+          the clients and distributes them between the servers
+        => this is a load balancer
+
+- load balancer
+    - distributes connections
+    - can be hardware or software
+    - acts as a proxy
+    - periodically check-in with the servers to see if they are still responding
+    - clients only need to know the website (IP address) of the internet-facing endpoint of
+      the load balancer
+    - provides fault tolerance: a server fails, the load balancer detects it and temporarily
+      removes it from the server pool and stops directing traffic towards it, the clients
+      hopefully don't even recognize this event
+    - resilient against attacks
+        - not considered to be a security device
+        - they have some security built into them
+        - they are the only way inside the network -> would be a good place to perform some
+          security filtering
+        => whether traffic filtering is built into a load balancer depends on the actual
+           hardware or software solution, it is not a requirement
+    - how does it choose the server to send the connection to?
+        - layer 3 and 4 headers => simplest solution is to only look at these
+            - src and dst IP address (L3)
+            - dst port (L4)
+        - layer 7 => more complex
+            - has to unwrap the requests coming from the clients and understand what the
+              clients want to do
+            - it can see the type of URL or application being requested
+            - e.g. some servers handle request for application A, others for B, ...
+            - it can also decide based on the kind of content the client is requesting
+                - regular server for HTML or javascript that are not so resource-intensive
+                - video streaming requests get directed to a server with a lot more CPU
+                  processing power, more RAM and more networking bandwidth
+    - how does a load balancer choose from equal servers?
+        - randomly: not optimal distribution of load
+        - scheduling algorithms
+            - round robin 
+                - first request to server A, second to server B, ... then recycle
+                - also not an optimal solution, does not take the type of request into
+                  consideration (e.g. streaming, busy database, ...)
+            - weighted distribution
+                - some more powerful servers get more connections
+            - or some more clever solutions
+                - takes the load of each server into consideration
+                - knows how many active connections each server has, what the CPU load is, ...
+    - session persistence
+        - once you have authenticated, the session information is stored on a single server
+          behind the load balancer
+        - all your subsequent requests must go to the same server, otherwise other servers do
+          not know who you are
+        - the load balancer also needs to know that some clients, when they initiate a
+          session, they have to subsequent connections coming from the same client, using the
+          same session information, should end up on the same server as before
+        => HTTP cookies
+
+- DDoS attacks (Distributed Denial of Service)
+    - just like regular DoS
+    - only purpose is to simply deny access to a certain service by overwhelming it or any of
+      the devices that lead to it with many connections and bogus traffic
+    => the real customers cannot reach them anymore
+    - extremely easy to perform these attacks
+    - many times these connections are not like regular connections, they are half complete,
+      they are only initiated, but the TCP handshake is not performed of the communication is
+      not used for any traffic
+    - usually launched from multiple locations at the same time => botnet
+        - high volume of traffic
+        - large number of connections initiated
+    - most common type: SYN flooding
+        - TCP three-way handshake : SYN - SYN_ACK - ACK
+        - spamming SYN, server replies with SYN_ACK => half-open connection
+        - server is going to fill up at some point, resulting in legitimate users not being
+          able to access the service
+        - you can also send the SYN with a fake IP address so that the SYN_ACK does not even
+          come back to you
+
+- Amplification (D)DoS attacks
+    - app and protocol requests
+    - certain protocols were designed so that they act on a request-reply pattern
+        - in some situations they have a disproportionate ratio between very small requests
+          and potentially very large replies
+        - it is not exactly a vulnerability but rather a design feature
+    - disproportionate query/response sizes in NTP, DNS, ...
+        - DNS request is small, but the reply can be huge if the server has a large database
+        - NTP can also support specific requests that result in a reply that contains the e.g.
+          last 600 IP addresses that the NTP server has contacted
+    => we are spoofing DNS and NTP servers with the victim's IP address
+        - servers are responding to that IP address, overwhelming that IP address
+
+- how to mitigate DDoS attacks?
+    - load balancing & clustering
+        - traditional load balancing: distributing traffic between servers
+        - clustering: multiple devices perform the same role, they are kept in sync, so that
+          when one of them fails, the other can immediately take over
+        - share data instead of distributing it to individual nodes
+        - with load balancing, all the traffic goes through a single load balancer -> what if
+          it fails?
+            - you can connect two load balancers, but then what? If one fails, how do the
+              clients know that they now have to connect to the other load balancer?
+            => clustering
+        - allows us to transparently present to the end-users a single IP address (called
+          virtual IP) even if on the physical side that one virtual IP address points to
+          multiple identical devices that all belong to the same cluster and are synchronized
+          with one another
+        - also called floating IP address, because at some point it points to one device, and
+          at another point it points to another device, completely transparently
+        - there are some protocols that are used to keep these devices synchronized
+            - this also takes care of who handles which request, because at the end of the
+              day, your request must reach a single load balancer from the cluster
+        - active/passive clustering
+            - one device answers all of the requests
+            - the other devices are waiting and periodically checking with a heartbeat whether
+              the active device is still able to serve the clients
+            - the moment the active device fails, one of the passive devices takes over
+        - active/active clustering
+            - real load sharing
+            - all of the members of the cluster are actively busy serving requests that are
+              coming in
+            - if one fails, the other active devices take over
+        - protocols
+            - CARP (Common Address Redundancy Protocol)
+            - HSRP (Hot Standby Routing Protocol)
+            - VRRP (Virtual Router Redundancy Protocol)
+            - GLBP (Gateway Load Balancing Protocol)
+    - ISP involvement -> have the ISP filter the bogus traffic before it reaches you
+        - they have huge resources
+        - they see the traffic before it reaches you
+        - it is better if you don't filter it on your own, maybe the goal is to get your
+          router's CPU to 100% do that it cannot accept any new connections
+        - of course it comes with a cost, it is a service that you can buy from the ISP
+    - blackhole and sinkhole routing
+        - blackhole: you are able to match the traffic, you recognize a pattern, a specific IP
+          address -> you just redirect it to the /dev/null, you just drop the traffic
+            - this works if some pattern can be matched and if your capacity is not saturated,
+              because if 100% of your traffic is DoS, then dropping 100% of your traffic does
+              not help you much
+        - sinkhole: a type of traffic dropping, but with the ability to further analyze it
+            - redirect and back up the attack traffic
+            - learn from it -> create some security rule based on it
+
+- Quality of Service (QoS)
+    - most networking devices handle traffic on a best-effort basis -> first come first serve
+    - QoS does traffic prioritizing
+        - when do you need this? -> when there is congestion, when there is more traffic than
+          you can handle
+        - as long as you have enough capacity, you don't need QoS
+    - types of traffic prioritization
+        - bandwidth: you need a certain bandwidth for an traffic
+            - e.g. video streaming -> you want good image and good quality
+        - latency: delay between sending on one end and receiving on the other
+            - e.g. Voice over IP (VoIP) and other real-time communications
+    - necessary steps:
+        - identify the traffic: does it belong to a streaming or VoIP traffic
+        - marking -> put some sort of a stamp on the traffic
+            - the entire internet is between the sender and the receiver
+            - these devices need to know how you want this traffic to be prioritized
+        => identification and marking happens as close to the source as possible so that
+           everyone knows later on how to handle the traffic
+        - policy enforcement
+            - e.g. reserving a certain bandwidth
+            - e.g. jumping the queue to minimize latency
+            -> goal is to reach the intended level of service
+            - marking does not make any sense if there is no policy in place that understands
+              those markings and handles marked traffic differently
+    - how to identify traffic?
+        - match it using access lists
+        - mostly layer 3, layer 4
+        - sometimes layer 7, but it takes time to look into the packet that deep, so it might
+          not be worth it
+    - marking traffic
+        - 802.1p header at layer 2
+            - has a 3 bit field called PCP (priority code point)
+            - class of service -> background, best effort, excellent effort, video, voice, ...
+        - DiffServ at layer 3
+            - leverages 8 bits in the IPv4 header -> differentiated services bits
+                - sometimes shown as 8 bits TOS (type of service)
+                - sometimes shown as 6 bits DSCP and 2 bits ECN
+                    - Differentiated Services Code Point -> type of service
+                    - Explicit Congestion Notification -> not really used anymore
+                - DSCP is quite complicated, different traffic classes, multiple subclasses
+                  with different drop probabilities
+    - prioritization
+        - packet queues -> different queues for differently marked traffics
+            - there are queues with higher priority than others
+            - limited number of queues, because they take up memory
+        - queueing algorithm
+            - they decide how to build up queues and how to take packets from these queues
+            - take a lot of aspects into consideration, not just the type of traffic
+                - like to overall amount traffic
+                - there are some that prefer applications that generate low amount of traffic
+                    - those packets might be more critical
+                    - applications that generate a huge amount of traffic are more likely to
+                      recover from dropper packets
+    - policy enforcements
+        - what do you do with the queued traffic?
+            -> policing and shaping
+        - shaping
+            - queue up traffic and allow it to leaf through the interface up to a specific
+              speed, e.g. limiting netflix to 1Mb/s
+            - queueing takes memory, what happens when these queues get full?
+            -> start dropping traffic called traffic policing
+        - policing
+            - instead of queueing traffic and trying to shape the traffic to match a specific
+              flow or bandwidth, you start dropping packets that go above a certain threshold
+            - there are going to be a lot of packets dropped, but most applications will level
+              them down when they see that packets are dropped, they will start sending less
+              traffic, drop quality, resize stuff, ...
+
+- QoS attacks
+    - fake markings
+    - attackers can introduce fake high-priority traffic
+    => fake urgency attack
+    - not much that you can do against this type of attack, but it is not that damaging, all
+      it can do is DoS attack
