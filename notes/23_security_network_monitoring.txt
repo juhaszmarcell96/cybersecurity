@@ -1,0 +1,192 @@
+Security Network Monitoring & SIEMs
+-----------------------------------
+
+- intrusion detection
+    - system monitoring network traffic and application events (e.g. OS logs)
+    - NIDS (Network-based Intrusion Detection System)
+        - operates on a network-level
+        - monitors and logs application traffic to detect malicious behavior
+        - this functionality is usually built into e.g. larger firewall devices
+        - examples software: Snort, Suricata, Zeek/Bro
+        - rely on a database of signatures
+            - how the traffic pattern should look like if it is a specific attack
+            - sequence of packets, outlying type of packet, suspicious payload, ...
+        - more advanced systems can correlate the network information with log information
+            - suspicious traffic -> look at what the application does (logs)
+        - just detection, cannot block malicious traffic even if identified, not prevention
+            - raise some alerts, generate logs, ...
+            - attacker is unable to detect this device, because it is not in the path
+            - works with a copy of the traffic
+    - monitoring traffic
+        - how to make a copy of the traffic?
+        - port mirroring or switch port analyzer (SPAN)
+            - a functionality on L2 or L3 switches
+            - switch can be configured that whatever traffic you see on port X, make a copy
+              and forward it out of port Y -> goes to the monitoring device
+            - you might not see 100% of the traffic, e.g. if the switch is overloaded or
+              frames containing errors are dropped
+        - TAP (Test Access Port)
+            - L1 device
+            - like a 'T' connector on the physical layer
+            - simply duplicates the electrical signals it sees on the wire and makes a copy
+            - copies frames with errors as well
+            - signal repeater
+        - inline transparent device
+            - IDS device is in the traffic's path, but is transparent -> bridging
+            - can actually block the traffic -> intrusion prevention
+    - HIDS (Host-Based Intrusion Detection)
+        - software package that can be installed on a host
+        - kernel, memory, unencrypted content visibility
+        - sees the processes, privileges, ...
+        - file monitoring for integrity (FIM - File Integrity Monitoring)
+            - especially for the operating system files
+
+- intrusion prevention
+    - NIPS (Network-based Intrusion Prevention System)
+        - active response when detecting intrusion
+            - reset: send a TCP reset packet -> break connection
+            - drop: can also block traffic
+            - police: limit the bandwidth if DoS is detected
+            - e.g. based on ACLs
+        - inline: AV, reputation & URL filtering
+            - needs a lot of processing power if e.g. decryption is needed
+    - IDS/IPS detection methods
+        - detection is the same for both, the action is what differs
+        - signatures: known patterns in a database
+            - up-to-date database is needed
+            - usually better maintained by commercial providers -> costs money
+            - open-source is also good, but not always up-to-date
+            - new attacks are not detected either way
+        - behavioral: define a baseline, then look for anomalies
+            - not looking at bytes and headers
+            - looks at the overall behavior of an application or protocol
+            - is it doing what it should be, is it generating the expected amount of traffic?
+            - what do we compare the behavior to?
+                -> this is the baseline
+                - leave a system in the network for some weeks, see how does a normal traffic
+                  and behavior look like? How does the traffic look like when people are
+                  accessing internal applications or over the internet? How do midnight
+                  backups look like?
+                - machine learning can benefit this area
+        - false positives & false negatives
+            - there are always errors -> "IPS without eyes is useless"
+            - false positives are not a security risk
+
+- devices implementing IPS functions
+    - NGFW (Next-Generation Firewalls)
+        - application-level firewalls + built-in IPS
+        - always-present term, no-one knows where it starts/started, where it will end
+        - just an L7 firewall -> looks at the application-level payload
+    - UTM (Unified Thread Management devices)
+        - all-in-one security device: firewall, IPS, IDS, URL filtering, anti-malware,
+          anti-spam, DLP, ...
+        - lot of functionalities -> worse performance, higher latency
+    - WAF (Web Application Firewall)
+        - rulesets that detect web-based attacks
+        - looking for attacks that are trying to exploit some input validation flaw
+        - mostly signature-based
+        - can be a separate network appliance
+        - can be part of the webserver -> plugin-based for Apache, nginx, IIS
+
+- monitoring the network
+    - making a copy of every traffic might not be feasible
+    - you can create a summary of the traffic and analyze this summary
+        - called netflow
+        - summary contains the sources, number of bytes, flags, ...
+        - you loose application layer visibility, you only have a summary
+        - you gain performance
+    - sometimes looking at the traffic is not feasible either -> network performance monitors
+        - monitors switches, routers, servers, ...
+        - CPU load, data-rate, routing table, ARP table, DHCP state, ...
+        - protocols to perform this monitoring: SNMP, WMI, ...
+        - can collect logs from the monitored devices as well
+
+- SIEMs
+    - Security Information & Event Management
+    - does correlation -> looks for patterns, e.g. correlates network traffic with logs
+    - can collect logs from every device: laptops, mobile devices, routers, ...
+    - powerful and expensive tool
+        - log and alert storage
+        - log analysis, learning, baselining, pattern-matching and deviations
+        - log correlation
+        - high-level overview of security posture
+    - simple reports can be generated using standard database queries
+    - advanced machine-learning-built reports
+    - UEBA (User and Entity Behavior Analysis)
+        - track and machine-learn how users behave, identify abnormal behavior
+    - user sentiment analysis -> interpreting events or intention from natural language
+        - emotion AI
+        - not analyzing emails and such, those would go against privacy regulations
+        - based on blog posts, social media posts, other publicly available data
+        - sound good on paper, the technology is not fully there yet
+    - SOAR (Security Orchestration, Automation and Response)
+        - usually built into SIEM solutions, but could be a standalone solution as well
+        - tries to address the problem of too much information
+            - too many incidents, too many events
+            - the IT department should not be overwhelmed
+        - uses machine-learning techniques
+        - analyses some events, determines if an attack is going on, takes action
+
+- SIEM data sources
+    - agents on hosts/servers
+        - designed to be installed on windows or linux
+        - running as background processes
+        - periodically scan the system and send reports to the SIEM
+        - SIEM has different plugins to understand the log format of different vendors
+    - built-in listeners or collectors (standard syslog, SNMP traps, Netflow variants)
+        - they are expected to send a copy of their syslog
+        - they should be configured to do so, SIEM is not getting it, they are sending it
+        - netflow: a summary of the traffic over a period of time
+    - sensors for network traffic
+        - SIEM can capture raw packet data if a device sends the SIEM a copy
+        - also, external devices can monitor raw traffic and send summary to SIEM
+    => SIEM collects these and correlates them
+
+- SIEM normalization and aggregation
+    - log normalization: feature built into most SIEM solutions
+        - log is collected from 100s of vendors, 1000s of appliances, different OSs, different
+          versions, different log formats, JSON, XML, UTF-8, \n, \r\n, ...
+        - these need to be collected in a centralized database so that it can be accessed
+        => normalization
+        - vendor plugins are used for normalizing the vendor-specific log files
+    - timestamp normalization is important as well
+        - local vs UTC, timezones, daylight saving time, 12h, 24h, ...
+        - otherwise order of events is not consistent
+
+- SIEM analysis and detection
+    - rule-matching
+        - if-then-else approach
+        - fast
+        - useless against unknown threats, because they are not yet in the database
+    - heuristic rule-matching
+        - a more "permissive" if-then-else
+        - not an exact matching, but close to it
+        - requires you to constantly fine-tune your rule set
+    - behavioral analysis
+        - build baseline, define how "normal" operation looks like
+        - statistical model, requires human intervention for fine-tuning
+        - might create a lot of false-positives
+            - irregular backup, does happen rarely, a human needs to okay it for SIEM
+    - anomaly analysis
+        - compare observed behavior with known standard behavior
+        - e.g. deviation from the RFC
+    - trends analysis
+        - look for historical patterns
+        - e.g. backup produces around 5GB traffic, then sudden 10GB traffic is suspicious
+        - e.g. 2GB last week, 4GB this week -> 6GB is not suspicious next week
+        - based on predictions, but they must be trusted
+
+- SIEM rules
+    - start from a predefined set of rules
+    - customization is required to mach each environment
+    - rule: statement that matches conditions by
+        - numerical value
+        - string comparison
+        - set membership
+        - unified AND/OR operations
+    - rules are sometimes similar to database (SQL) queries
+        select <field> where <condition> sort by <field> ...
+
+- not everyone has money for a SIEM solution
+    -> manual commands are sometimes enough to look at logs
+    - cat, head, tail, grep
