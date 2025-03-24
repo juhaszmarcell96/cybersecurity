@@ -1,0 +1,154 @@
+Firewalls and Proxies
+---------------------
+
+- firewall
+    - very simple device
+    - allows or denies traffic passing through it -> permit or block?
+    - default is blocking, traffic that is not specifically allowed is dropped
+        -> implicit deny
+        -> explicit allow
+    - basic element for filtering traffic in a firewall is a list of rule -> ACL
+        - Access Control Lists
+        - decides which type of traffic is allowed and denied
+        - layer 3 and 4 -> filter based on src/dst IP, protocol type, src/dst port number
+        - maybe some layer 2 filtering as well (based on MAC addresses)
+        - simple actions for a given type of traffic is accept or deny, but there can be more
+          complex actions, such as logging the traffic, scan it, try to decrypt it, ...
+        - rules have directions : ingress or egress
+            - ingress: traffic entering the interface of a firewall
+            - egress: traffic leaving the interface of a firewall
+    - types
+        - stateless firewall
+            - simple, not even found in the real world anymore
+            - no state information, packets are inspected independently
+            - packet-filtering firewall
+            - no session/connection traffic
+            - cannot assemble packets
+            - cannot detect attacks that span over multiple packets
+            - cannot handle applications that dynamically negotiate the port that they are
+              about to communicate over, because it is embedded in the actual payload
+        - stateful firewalls
+            - session tracking, stateful inspection -> remembers requests going out and allows
+              the reply coming back automatically
+            - table memory, contains the pending requests that did not yet receive a reply
+            - you only need to create the rules in one directions, if you allow a type of
+              traffic as outbound traffic, the replies coming back will be allowed as well
+            - layer 4 connection tracking
+                - TCP 3-way-handshake is easy to track
+                - UDP is connectionless, no handshake
+                    - tracks it based on some timeouts, tracks the traffic
+                    - if no traffic over a longer period of time -> close the port
+                    - same goes for ICMP or any other stateless protocols
+            - layer 7 (application layer) - not all firewalls can look at this
+                - Application Firewalls
+                - per protocol
+                - look at URLs, HTTPS requests, ...
+                - in order to achieve this, the firewall has to dig through and assemble
+                  multiple packets, trying to extract application data from the packets, which
+                  introduces a bit of delay, and it requires a powerful hardware that runs the
+                  firewall
+                - more often than not, these firewalls also need to decrypt messages, because
+                  most traffic is nowadays encrypted -> man-in-the-middle
+                    - easier if you manage all hosts of the network, harder to do in a public
+                      WiFi
+    - other classification
+        - routed vs transparent firewall
+            - routed: it acts as a router, each interface has it's own subnet, it has a
+              routing table in it -> routing happens at the same time with security decisions
+            - transparent firewalls = L2 firewalls = bridged firewalls
+                - probably have one single IP address for the management interface
+                - they act as a switch
+        - router firewall: not really a separate type, firewall functionality built into a
+          router, these are the device most people have at home (router, AP, firewall in one)
+        - host-based firewalls
+            - software implementations
+            - built into the OS or downloaded as a software package
+            - e.g. Windows Firewall, iptables (Linux)
+            - they have process awareness, they know what processes are running
+            - rules can be defined for specific executables
+    - application-specific firewalls
+        - WAF (web applications)
+            - designed to detect attacks on web applications
+        - DBF (database)
+            - detect SQL attacks and other database attacks
+    - NOS firewall (Network Operating System Firewall)
+        - dedicated server (Windows or Linux) running a firewall software
+        - the server acts as a gateway or proxy for the rest of the network
+    - virtual firewalls
+        - virtual machines acting as firewalls, protecting the rest of the virtual
+          infrastructure
+        - can also run on dedicated virtual appliance, preconfigured, prepackaged, coming from
+          recognized vendors
+        - you can also partition one firewall instance into multiple instances
+            - e.g. multiple departments administering their own rules for the same firewall
+            - every instance acts as a completely independent firewall
+            - the disk and CPU resources are partitioned as well
+    - open-source vs proprietary
+        - open-source: pfSense
+        - proprietary: Cisco, PaloAlto, Barracuda
+
+- proxies
+    - keyword: interception
+    - it is a functionality built into different devices, such as firewalls or operating
+      systems, although they could be a separate device as well (not common)
+    - types
+        - forward proxies
+            - intercepts outbound connections
+            - looks at connections initiated from the inside going to the outside and decides
+              whether to allow them or not
+            - you can instruct the OS or the browser that whenever you try to reach a specific
+              destination, make sure to send the connection request through this address first
+            - implemented especially for security purpose -> filtering
+            - can also be used for caching purposes
+                - many employees access the same resource frequently -> you can configure the
+                  proxy to cache some of those resources
+            - transparent vs non-transparent
+                - non-transparent: OS or browser configured with proxy information, actively
+                  modifying the next hop for certain traffic
+                - transparent: just sitting in the way of the traffic
+        - reverse proxies
+            - basically load balancers
+            - looks at the connections coming from the outside, aiming to connect to resources
+              inside of our network, it listens for incoming connections and forwards them to
+              the appropriate servers -> load balancer is a reverse proxy
+            - connection balancing, security, health checks, ...
+
+- NAT (Network Address Translation)
+    - RFC 1918 (private) to public Internet routing
+        - private:
+            - 10.0.0.0 - 10.255.255.255 (10.0.0.0/8)
+            - 172.16.0.0 - 172.31.255.255 (172.16.0.0/12)
+            - 192.168.0.0 - 192.168.255.255 (192.168.0.0/12)
+    - performed by routers, firewalls, gateways, proxies
+    - inside of the network, we are running on private IP addresses
+    - private addresses are not routable over the internet
+        -> you cannot go out to the internet with a private source IP address
+        -> it has to be translated to a public IP address
+    - static NAT
+        - 1:1 mapping between private and public addresses
+        - not often found, there are limited public IP addresses
+        - most companies have 1 or 2 public IP addresses but thousands of private ones
+    - dynamic NAT
+        - pool of public IP addresses
+    - Port Address Translation (PAT) or NAT Address Overloading
+        - the actual implementation
+        - N:1 mapping between private and public addresses
+        - any private IP address coming from the RFC 1918 range is going to be translated into
+          one public IP address that we are using to go out to the internet
+        - if 10 people at the same time use the same IP address, where does the reply go?
+            -> different port numbers
+        - translation of both IP and TCP/UDP port numbers to allow for multiple simultaneous
+          connections on the same public IP address
+            - port numbers are stored in a translation table of the device that performs NAT
+            - reply coming through a port goes to the client associated with that port
+            - request is sent with the public IP address and the port of the NAT device that
+              is associated with that host's connection
+    - port forwarding
+        - translation of the destination IP address (Destination NAT)
+        - reverse NAT
+        - whenever you are receiving connection on this specific port from the internet, make
+          sure to forward them to this private address and this port on the local network
+        - the router replaces the destination IP and port with the host's IP and configured
+          port -> expose locally running services
+        - if you are exposing a website, then you probably don't want to change the port,
+          because e.g. HTTPS runs on well-known ports
