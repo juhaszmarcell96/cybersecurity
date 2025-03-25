@@ -1,0 +1,152 @@
+Application Protocol Security
+-----------------------------
+
+- HTTP (Hyper Text Transfer Protocol)
+    - hypertext = text including links to other texts
+        - www was imagined as a network of documents, each linking others
+        - nowadays this is not true anymore, we are sending binary data over HTTP, we are
+          streaming videos and playing games over HTTP, ...
+        - very flexible, this is why it still allows as to do so much on top of it
+    - main protocol in any web technology
+    - client-server
+        - client: web browser, mobile application
+        - server: running in some data center
+        - request-response communication
+        - client requests resources using URLs (Uniform Resource Locator)
+            - can also contain payloads, such as an image to upload
+        - server responds with payload (text or binary, web pages or generic files)
+            - HTML (HyperText Markup Language) us just one of the possible payloads
+        - both the request and the response include an HTTP header, which can contain a number
+          of different information
+            - request and response formats
+            - authentication information
+            - client/server additional information
+    - completely stateless protocol
+        - no client identification, no session identification, ...
+        - needs other technologies to store states, such as cookies
+        - HTTP/2 includes some stateful behavior by bundling multiple requests together on
+          some sort of a short-lived "session"
+    - server usually listens on port TCP 80
+    - HTTP was later evolved to HTTPS, running on port TCP 443
+    - if an HTTP URL is entered, the browser will assume that it is running on port 80, if the
+      URL is HTTPS, then the assumption is 443
+    - common HTTP methods
+        - GET: request data
+        - POST: create new data (email, file, profile picture, ...)
+        - PUT: insert, replace (similar to POST, more a database operation)
+        - HEAD: just the header
+        - DELETE: remove data
+    - HTTP response codes
+        - 2xx: success
+            - 200: successful GET/POST
+            - 201: successful PUT
+        - 3xx: redirects, server sends you somewhere else
+        - 4xx: client error
+            - 401: bad auth
+            - 403: insufficient permissions
+            - 404: non-existent resource
+        - 5xx: server error
+
+- TLS/SSL
+    - Transport Layer Security / Secure Sockets Layer
+    - HTTP has no built-in security
+    - first, we had SSL, which was used to protect HTTP traffic -> HTTPS, TCP 443
+    - SSL 3.0 became TLS 1.0  
+    - can be used with any inner protocol, including generic VPN tunnels, not just HTTP
+    - server certificate is required
+    - client certificate is optional
+        - username and password
+        - one-time password
+        - nothing
+    - supports multiple encryption ciphers negotiated during the first TLS exchange
+        - what ciphers does the client support, and what does the server support?
+        - find the common algorithms and use the best one
+    - anything lower than TLS 1.2 is not considered secure
+        - downgrade attacks, if every cipher support is allowed, the attacker can present
+          themselves as a client supporting low-security encryption algorithm
+    - example of negotiated cipher suite:
+        - TLS_AES_128_GCM_SHA256
+            - TLS Advanced Encryption Service
+            - using 128 bits for the keys
+            - Galois/Counter Mode to avoid replay attacks
+            - SHA256 hashing algorithm for integrity
+
+- APIs
+    - Application Programming Interfaces
+    - an additional interface usually exposed by web applications that can be used in a
+      programmatic way
+    - maybe other applications use it, or allows automated interaction with the application
+    - e.g. some storage service, like AWS exposes such API so that you can interact with the
+      database
+    - APIs also use the HTTP protocol, but the requests are now sent by a program or script
+      that you developed, and not by the browser
+    - relies on API keys
+        - some sort of an authentication information
+        - attached to every request
+        - the more API keys you have, the larger the attack surface
+        - the more resources you expose over the API, the larger the attack surface
+
+- securing file transfers
+    - FTP (File Transfer Protocol)
+        - TCP 20 and 21
+        - all credentials in clear-text
+        - both the control channel and data channel are in clear-text
+    - SFTP (SSH FTP)
+        - SSH tunnel for authentication and file transfer
+        - TCP port 22
+    - FTPS (FTP over SSL)
+        - SSL tunnel for protecting authentication and file transfer
+        - explicit TLS (FTPES): "upgrade" a clear-text connection on port TCP 21 to a secure
+          one (clear-text connection is initiated by the client, but then it is upgraded with
+          a specific set of commands, which initiates a key exchange, ...)
+        - implicit TLS (FTPS): start the secure communication right from the very beginning
+          over port TCP 990
+
+- securing email
+    - SMTP (Simple Mail Transfer Protocol)
+    - email protocol
+    - SMTP severs announced in DNS MX records
+        - find the records for the domain you want to send the email to
+        - send the necessary SMTP communication over TCP
+    - TCP port 25
+    - no security
+    - SMTPS (Secure SMTP)
+        - securing SMTP over TLS
+        - similar to HTTPS
+        - explicit TLS
+            - connection starts on TCP port 25 in clear text
+            - use the STARTTLS command to upgrade the connection -> port TCP 587
+        - implicit TLS (SMTPS)
+            - TCP port 465
+    - POP3: TCP port 110, clear-text (Post-Office Protocol)
+    - POP3S (Secure POP): TCP port 995
+    - IMAP: TCP port 143 (Internet Message Access Protocol)
+    - IMAPS (Secure IMAP): TCP port 993
+
+- S/MIME
+    - having secure email protocols is good, but it is no guaranteed that they will be used
+      all the way to the recipients
+    - S/MIME can digitally sign and encrypt emails
+    - Secure/Multipurpose Internet Mail Extensions
+        - secure email
+    - encrypt emails against eavesdropping and digitally sign then for sender validation
+        - sender needs a valid digital certificate
+        - recipient needs to understand S/MIME
+        - sender runs a hashing function over the content of the main
+        - that hash is encrypted with the sender's private key
+        - then the contents of the email are encrypted with the recipient's public key
+            - the recipient needs a digital certificate as well
+            - the recipient is the only one who can decrypt it
+        - the email is sent as an blank email with the encrypted data as attachment
+        - recipient decrypts is with their private key
+        - the recipient validates the sender's signature by decrypting the hash with the
+          sender's public key
+
+- securing voice and video
+    - real-time communication uses
+        - a control channel (SIP - Session Initiation Protocol, TCP port 5060)
+        - a data channel (RTP - Real-time Transport Protocol)
+        - might also have prioritization (Quality of Service)
+    - security is similar to HTTP
+        - SIPS (SIP over TLS, TCP port 5061)
+        - SRTP for payload encryption using a key generated by SIPS
