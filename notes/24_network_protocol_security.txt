@@ -1,0 +1,139 @@
+Network Protocol Security
+-------------------------
+
+- different network protocols are used at different levels by apps and users
+    - HTTPS
+    - TCP/UDP
+    - IPv4/IPv6
+
+- most protocol vulnerabilities are found in
+    - unsafe protocol -> uses clear text or the security protocol is simply deprecated
+    - insecure configurations -> not the protocol's fault
+        - e.g. many protocols support a wide variety of encryption algorithms, even deprecated
+          ones, and it is up to you to use one that is safe enough for the application
+        - HTTPS can also be used with insecure encryption methods
+            - you need to restrict the accepted TLS versions, e.g. above 1.2
+
+- IP address security
+    - securing IP address allocation
+    - most networks have a mix of static and dynamic IP address allocations
+    - dynamic is done with DHCP (Dynamic Host Configuration Protocol)
+    - DHCP is an older protocol, it is not secured
+    - e.g. rogue DHCP server -> it can reply to new client with valid responses but including
+      fake information, such as fake default gateway information -> every packet can be routed
+      through a desired machine -> man-in-the-middle attack
+        - can also inject invalid DNS servers, can also be a rogue DNS server
+        - this DNS server can reply to DNS requests with fake phishing websites
+    - e.g. DHCP server DoS
+        - simple exhaustion of a DHCP server's IP address pool
+        - anyone can send a bunch of fake DHCP requests to the server, and the server will
+          think that there are a large number of hosts connected to the network, and it simply
+          runs out of available IP addresses
+    - e.g. DHCP server database compromise
+
+- DNS security
+    - can also pose a lot of security risks
+    - hijacking DNS domains
+        - attacker takes over the domain of a legitimate website or a domain with a slightly
+          different spelling (mistyped domain name)
+        - users will be redirected to the attacker's website, e.g. phishing website
+    - URL redirection
+        - e.g. in a post an attacker could post a link that looks like a valid website, but it
+          actually is a redirect link that redirects to the attacker's website
+    - if there are a number of these security incidents, sooner or later the reputation of
+      your website will be impacted and it will appear in the access control lists
+    - DNS poisoning
+        - inject fake information into the valid DNS request-response process
+        - to make this attack happen, attackers need to perform some kind of a MitM attack
+            - ARP poisoning and/or rogue DHCP server to redirect user DNS traffic
+            - DoS on the real DNS server
+    - client cache poisoning
+        - attacks the local DNS information stored on the client
+        - /etc/hosts on linux
+        - %SystemRoot%\System32\Drivers\etc\hosts on Windows
+        - this file is the first that is queried when a domain name needs to be resolved
+    - server cache poisoning
+        - injecting false information in the DNS server's database
+        - force it to performs recursive queries against attacker's DNS servers
+        - exploit service vulnerabilities
+    - how to protect the DNS servers?
+        -> patches and updates
+        -> no recursive queries from the internet
+        -> no zone transfers
+            - zone transfers is used to synchronize databases between servers, and it should
+              only be used to synchronize between internal servers, you don't want to reveal
+              internal IP addresses to external servers
+        => don't give unnecessary information to the outside world
+        - DNSSEC (DNS Security Extensions)
+            - since DNS has no built-in security
+            - digitally signs DNS responses
+            - RRset signed with private key (Zone Signing Key)
+                - RRset (Resource Record set): container for the data, digitally signed
+            - checked and validated using server's public key
+            - public key is also signed with a Key Signing Key (KSK)
+            - KSK is validated by upper-level domains, creating a hierarchy if DNS trust
+
+- securing user directories
+    - a directory is a database of users, devices and services including their permissions
+        - has subjects and objects
+        - subjects request access to objects
+        - it also stores a set of permissions for each subject, specifying what they can do
+          with the objects
+    - LDAP (Lightweight Directory Access Protocol)
+        - most directories are based on this nowadays
+        - port TCP 389
+        - absolutely no security, extremely vulnerable, but supports security options
+            - no auth (no authentication, allowing anonymous access, not really a security
+              feature)
+            - simple bind
+                - client only needs to present itself with a distinguished name and a password
+                - not secured
+            - SASL (Simple Authentication and Security Layer)
+                - allows the client and the server to negotiate an authentication mechanism,
+                  such as Kerberos
+                - supports explicit TLS
+                    - send a STARTTLS message indicating that we want to talk using TLS
+                - default method for windows active directory
+            - LDAPS (LDAP Secure)
+                - port TCP 636
+                - digital certificate on server used to create a secure tunnel for the
+                  exchange
+    - LDAP access levels
+        - read-only (database query)
+        - read/write (database update)
+    => don't allow outside access to your LDAP server
+
+- securing time
+    - many things depend on time: logging, security policies, certificate validation
+    - NTP (Network Time Protocol) ensures automatic time synchronization on all devices and
+      all OSes
+    - UDP port 123
+    - hierarchical structure
+        - stratum 1 clocks
+            - has direct access to an atomic clock
+        - stratum 2+ devices
+            - delay compensation and client sync
+            - depending on how many hops away from a stratum 1 clock
+    - regular network devices can become local NTP server
+    - NTP takes into account the distance from the atomic clock and compensates for it
+    - no built-in security in NTP
+
+- SNMP security
+    - Simple Management Network Protocol
+    - used to monitor devices and operating systems
+    - older protocol as well
+    - SNMP agents are running on devices
+    - there are SNMP servers in the network collecting the information
+    - agent database: MIB (Message Information Base) is a structured hierarchy of statistics
+      relevant for the local device
+        - CPU usage, available memory, fan speed, power supply unit status, ...
+    - polling on port UDP 161
+        - sending request to the agent, agent replies
+    - traps on port UDP 162
+        - agent reports in case of an emergency, e.g. hard-drive failure
+    - versions:
+        - v1, v2c: no security, based on community names
+        - v3: encryption and authentication
+    - should be run on the management network segment, not in the production network and
+      definitely not on the internet 
+    - use explicit allow list of devices permitted to send SNMP traffic to hosts (ACL)
