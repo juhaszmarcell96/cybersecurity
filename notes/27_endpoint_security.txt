@@ -1,0 +1,220 @@
+Endpoint Security
+-----------------
+
+- securing the network is the first step -> securing the hosts connected to the network is the
+  next step
+
+- hardware Root of Trust (RoT)
+    - root of trust or trust anchor
+        - this is a secure subsystem, built into the hardware of a laptop, desktop, server...
+        - provides attestation = a statement or declaration
+            - states that the state of the hardware is secure
+            - when a host connects to the network, it is supposed to send some kind of a
+              report or attestation, stating that it has scanned the operating system files
+              and has not found any malware or tempered files
+            - this report is supposed to be digitally signed
+            - the server that decides whether this new device can access the network needs to
+              validate this signature and check report
+    - even large companies don't develop their own laptops
+    - how do you know that your laptops have no built-in back doors?
+    - this RoT is built into the TPM chip (Trusted Platform Module)
+        - cryptographic processor and storage
+            - stores keys, passwords, identities
+        - TPM is not necessarily a chip, it could also be a piece of software, e.g. emulated
+          for a virtual machine
+        - TPM is rather an implementation, but is more often than not implemented in hardware
+        - tamper-proof, crypto-shredding
+            - cannot be hacked
+            - or if hacked, it cannot be consistently altered
+            - crypto-shredding = when someone tries to temper with the chip, the contents are
+              destroyed
+        - level of security is high enough for enterprise security
+        - TPM is a black box, it has a predefined key built into it, called an endorsement key
+            - exposes cryptographic operations to you, like key generation based on the key
+            - that endorsement key cannot be changed
+
+- securing boot
+    - one of the first things that boots is the operating system
+    - if the OS is compromised, it does not matter what security measures are installed onto
+      the OS
+    - there is no BIOS anymore, what launches the OS is nowadays the UEFI
+        - Unified Extensible Firmware Interface
+        - has pretty mich the same features as a BIOS
+        - has a lot more security features, e.g. secure boot
+    - secure boot
+        - certificates from known vendors stored in UEFI
+            - it does not run any malware scanner
+            - rather it relies on integrity checks, hashing and certificates
+            - stores certificates from known OS vendors
+            - it checks against these certificates when the OS is booting
+        - prevents booting from a malicious OS
+        - secure boot does not require a TPM
+    - measured boot
+        - checks hashes of OS files
+        - does not prevent booting malicious OS files
+        - warns and alerts when unsigned code is detected
+        - it uses the TPM for the hash checks
+    - boot attestation
+        - generate a summary report of the host's boot status and send it to a network access
+          server, to a centralized point of access granting decision making
+        - access granted or denied based on the report's contents
+        - the report is digitally signed by a key stored in the TPM
+        - what happens if the attestation fails? -> up to the security policy
+            - fully deny access
+            - grant limited access
+    - full disk encryption
+        - encrypts entire disk
+        - filesystem ACLs are only relevant for the host's OS
+        - the operating system protect's other user's files as long as the disk is connected
+          to that operating system that was used to create those files
+        - if the disk is connected to a different machine, you have access to the whole disk
+        - unless of course the disk is fully encrypted -> confidentiality without relying on
+          the operating system
+        - relies on a key that is stored in the TPM chip (does not make sense to store the key
+          on the disk)
+        - TPM usually offers a separate partition for the OS to store their own cryptographic
+          information, like BitLocker has access to this partition
+        - the key can also be stored on a removable storage, like a USB stick
+            - great if you want to move the disk to a new device
+            - if the key is stored on the TPM, the disk cannot be moved to a new device
+        - encrypting and decrypting stuff is computationally intensive
+            - CPU and memory overhead
+            - Self Encrypting Drives (SEDs) -> offloading crypto operations to the HDD/SSD
+                - small crypto processor added to the SSD, which does these computations
+                - keys:
+                    - MEK (Media Encryption Key)
+                        - also called DEK (Data Encryption Key)
+                        - this key is encrypted by an asymmetric key pair called KEK
+                    - KEK (Key Encryption Key)
+                        - not the user's password
+                        - it is derived from the user's password
+                        - password is run through a process of key stretching
+                        - more secure key
+                - at some point you might want to change your password but don't want to
+                  decrypt everything and then encrypt it again
+                    - this way only KEK needs to be updated and the MEK re-encrypted
+
+- other endpoint risks
+    - USB and Flash Drive risks
+        - USB device firmware can be compromised: malicious code, pretending to be another
+          device, e.g. a USB stick can act like a keyboard
+        - a USB stick can be made to input shell commands with superhuman speed
+        - a USB stick can also present itself as a USB network card
+            - it can override your DNS entries and redirect you to other websites
+        - don't plug in any found USB devices
+        - sanitize USB devices using "sheep dip" systems
+            - test them in an isolated environment ("sandboxed environments")
+        - autorun risks are also present with malicious USB sticks
+        - peripheral access can also be controlled
+            - using group policy on windows
+            - can be configured by the company, but is really annoying for users if they
+              cannot plug in anything
+    - supply chain risks: trust or verify
+        - if any component, like the CPU or the TPM have been tempered with, then the whole
+          system is compromised
+        - manufacturing, assembly, shipping, IT department
+        - how do you trust the supply chain?
+            - most companies just buy stuff from reputable vendors and that's it
+            - large companies or government entities cannot rely on reputation only
+                - they might be able to conduct their own security assessments into the supply
+                  chain of the company that delivers their hardware
+    - end-of-life
+        - end-of-sale: the product is no longer sold, this is not that dangerous
+        - end-of-support: this is the dangerous one, no more security updates or patches
+            - comes later after the end-of-sale, maybe even 10 years after
+        - abandonware: no more vendor support
+            - smaller vendors, smaller projects, open-source projects
+            - no strong release cycle
+            - no specified end-of-support deadline
+            - suddenly no more support
+            - long-term-support
+                - for large open-source project, updates are as guaranteed as it can be for a
+                  specified number of years
+
+- endpoint hardening
+    - complex process, starts with evaluating the security posture, then make it more secure
+    - the endpoint is one of the most complicated device in the network
+        - versatile, does multiple things
+        - can run several different applications, ...
+    - applications
+        - vulnerable, expose attack matrices
+        - should be the first thing to secure
+        - number of allowed applications should be limited to the necessary ones
+        - no third-party software, no randomly downloaded software
+    - services
+        - similar to apps, but are not so visible
+        - there are default services, many of them are useless for yor purposes
+        - many services are waiting for incoming network traffic
+    - network interfaces
+        - this is where attacks are coming from
+        - isolated device is impenetrable, but useless at the same time
+        - disable additional network interface with no benefit to you
+        - for servers and switches, separate the management interfaces from the rest of the
+          network
+    - devices
+        - secure the external devices that are connecting to your workstations
+        - control what peripherals are allowed
+    - storage
+        - even if the entire device is stolen, data should still be protected
+        - use disk encryption
+
+- endpoint baseline
+    - how does a good workstation look like -> baseline
+        - baseline for desktop PC
+        - baseline for server
+        - baseline for mobile device
+        - ...
+    - baseline contains all of the necessary security features that need to be enabled on that
+      device every time it boots
+        - as for windows PCs, all the settings are stored in the registry -> can be checked
+        - if they connect in an active directory setting, hosts receive GPOs (Group Policy
+          Objects) -> deviations from these objects need to be investigated
+
+- patch management
+    - no software is without vulnerabilities
+    - devices should be up-to-date, especially security updates should be installed
+    - patch management process is very important
+    - there are dedicated solutions out there called vulnerability scanners that can detect
+      known vulnerabilities based on known signatures
+        - they cannot detect unknown vulnerabilities
+        - a vulnerability scanner in itself is not a security solution, it just reports the
+          known vulnerabilities, which then should be patched
+    - there are automatic and manual tools as well
+    - an update might break what was previously working
+        - patch management should be preceded by a phase where the patch is tested in an
+          isolated environment
+    - issues with legacy, EOL systems
+        - smart IoT devices sometimes have no update possibility
+
+- endpoint security solutions
+    - they are good, but people hate them
+    - categories
+        - malware protection (+ sandboxing)
+            - antivirus
+            - based on a database of signatures
+            - can be cloud-based, calculates hashes for files locally, and searches for the
+              hash in the cloud, checking against the valid hashes
+        - intrusion protection
+            - HIDS (host-based intrusion detection system), HIPS (prevention)
+            - more complex
+        - EPP (endpoint protection platforms)
+            - the ones that annoy the users
+            - malware scanning
+            - check your searches and URLs
+            - does spam filtering
+            - act as firewalls
+            -> can be slow
+        - DLP (data loss prevention)
+            - monitors data that you are trying to exfiltrate
+            - check what you are attaching to emails
+            - checks HTTP, FTP, ...
+            - issues with encrypted tunnels and password-protected files
+        - EDR (endpoint detection and response)
+            - detect intrusion attempts
+            - have visibility over how that intrusion developed over time, maybe even over
+              multiple workstations
+                - what files were downloaded
+                - how that file was executed, how it propagated over the network
+                - what did the malware do on each host
+            - it is able to detect unknown malware without signatures
+                - can stop the malware, prevent it from being executed on the hosts
