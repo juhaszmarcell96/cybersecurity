@@ -1,0 +1,155 @@
+Remote Access Security
+----------------------
+
+- remote access
+    - nowadays mostly using VPN
+    - accessing your local networked resources from some remote location, usually over another
+      network
+        - mobility
+        - device diversity
+        - network diversity
+        - working from home
+
+- VPN (Virtual Private Network)
+    - logical connection (tunnel) back to your home/work network
+    - usually encrypted
+        - the term VPN itself does not assume any encryption
+        - they can be secure, but it is not mandatory
+    - VPN client initiates the connection to a VPN server (concentrator)
+    - remote access VPN
+        - initiated from a VPN client on your own machine
+        - give you access, as a single user
+    - site-to-site VPN
+        - automatic (and sometimes permanent) connection between sites
+        - protects the connection between two networks
+        - established between 2 VPN gateways (routers, firewalls, VPN server, appliances, ...)
+        - hosts on each site transparently communicate over the VPN tunnel with hosts on the
+          other site
+
+- SSL (or TLS) VPN
+    - TLS is running inside it, but people still use the SSL name
+    - client authenticates the server by its certificate (just like a web browser)
+    - optionally, server can authenticate the client too
+    - client credentials passed over the secured connection (AAA server can be involved)
+    - default on TCP 443, but can be any port (even UDP -> DTLS)
+    - examples: Microsoft SSTP, OpenVPN, Cisco AnyConnect
+    - TLS (SSL) VPN works at the application layer (similar to HTTPS)
+
+- IPSec
+    - suite of protocols, algorithms, key exchange methods, ...
+    - tunneling at the network layer (at layer 3)
+    - can encrypt and or sign network packets
+    - can be run without changing the application, but requires careful configuration and
+      potential re-design of the network
+    - has no application-awareness
+    - adds quite a bit of overhead to the communication
+        - each and every IP packet has an overhead
+        - IPv4 has more of this overhead, IPSec is built into IPv6
+    - set of policies, connection methods, authentication methods, key exchange algorithms...
+    - two sub-protocols
+        - AH (Authentication Header)
+            - provides authentication (hashing + shared secret = HMAC added to the packet as
+              an ICV (Integrity Check Value))
+            - no encryption, nothing protects the packets against eavesdropping
+            - does not ensure confidentiality, only integrity
+            - announced in the IPv4 protocol number as protocol 51
+            - in IPv6 it is an extension header
+            - AH can present a couple of issues with some protocols
+                - e.g. NAT, which dynamically changes port numbers, it might not only change
+                  the IP header, but the TCP port number as well, but the TCP header is hashed
+                  to provide integrity validation
+        - ESP (Encapsulating Security Payload)
+            - encrypts and authenticates packets
+            - adds header, trailer and ICV
+            - in IPv4, it is protocol number 50
+            - in IPv6, it is an extension header
+    - IPSec Transport Mode
+        - used between hosts
+        - ESP: IP header is not touched, only the payload is encrypted
+        - AH: IP header gets hashed
+    - IPSec Tunnel Mode
+        - used between VPN applications
+        - ESP: new IP header is added, old one + payload get encrypted, the whole original
+               header is protected
+        - AH makes no sense in tunnel mode (why add another header of the old one is not
+          changed?)
+
+             |              authenticated               |
+                          |   encrypted   |
+        +----+------------+-----+---------+-------------+--------------------+
+        | IP | ESP header | TCP | Payload | ESP Trailer | ESP Authentication | transport mode
+        +----+------------+-----+---------+-------------+--------------------+
+          |                  |       |
+          |                  +--+    +--+
+          |                     |       |
+          |             +----+-----+---------+
+          +--------+----| IP | TCP | Payload |
+                   |    +----+-----+---------+
+                   |            |       |
+                   +---+     +--+    +--+
+                       |     |       |
+   +----+------------+----+-----+---------+-------------+--------------------+
+   | IP | ESP header | IP | TCP | Payload | ESP Trailer | ESP Authentication | tunnel mode
+   +----+------------+----+-----+---------+-------------+--------------------+
+                     |      encrypted     |
+        |                authenticated                  |
+
+- IKE (Internet Key Exchange)
+    - IPSec needs a shared secret (password)
+    - how do we share this secret without allowing an attacker to intercept it?
+    - IKE protocol for key exchange
+    - key exchange is called SA (Security Association)
+    - IKE phase 1:
+        - check identities (validate certificates or PSKs (pre-shared keys))
+        - create secure tunnel
+            - generating some random keys
+            - generated and exchanged based on the Diffie-Hellman algorithms
+    - IKE phase 2:
+        - uses the secure tunnel from phase 1 to establish encryption algorithms, key sizes,
+          ESP vs AH, etc...
+    - this was IKEv1 so far, which is good for mutual authentication, but not so much for a
+      client-server setup
+    - IPSec os therefore often used with L2TP to provide remote access and VPN authentication
+    - RA (remote access) VPNs use L2TP with IPSec
+        - IPSec secure tunnel
+        - user authenticates using EAP or CHAP
+        - PPP (Point-to-Point Protocol) encapsulates frames and adds overhead
+    - another option is to use IKEv2
+        - better choice for RA VPNs
+        - allows EAP
+        - shorter connection setup, less overhead
+        - works better over NAT (+ MOBIKE)
+
+- VPN policies
+    - usually configured on the concentrator/router/firewall and pushed to clients
+    - some configurations can also be done on the clients
+    - always-on VPN: requires your computer to connect to VPN when it detects a trusted
+      network, it is not able to generate any network traffic until it does so
+        - initiated by the OS or VPN client using some cached credentials
+    - split-tunnel: use the encrypted tunnel for destinations reachable over the VPN, but use
+      the regular network for destinations over the internet
+    - full-tunnel: packets all the destination are sent over the VPN
+        - usually has security purpose
+        - all the traffic is analyzed and filtered by the company
+
+- Remote Desktop Protocol
+    - visual remote connection fro GUIs
+    - full desktop or per-app streaming
+    - similar to TeamViewer, VNC, Guacamole (HTML VPN)
+
+- in-band vs out-of-band management
+    - in-band: production network
+    - out-of-band: separate network or dedicated connection (serial console)
+
+- jumpbox / jump server / bastion host
+    - using a dedicated host having the only purpose of concentrating connection from the
+      outside, do some analysis and allow access further into the network
+    - host hardening
+    - single admin access point for the infrastructure
+
+- SSH (Secure Shell)
+    - CLI secured remote access + file transfer
+    - works on any OS
+    - server identified by its host key
+    - client authenticated using password, public/private key pair or Kerberos
+    - SSH utilities: ssh, ssh-keygen, ssh-copy-id, scp
