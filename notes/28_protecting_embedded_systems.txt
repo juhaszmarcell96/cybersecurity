@@ -1,0 +1,139 @@
+Protecting Embedded Systems, ICS & SCADA
+----------------------------------------
+
+- embedded system -> performs one single, simple task
+- industrial systems are similar in this manner, they are also designed to do one task
+- they are considered to be static -> limited configuration or update possibilities
+    - weak and cheap hardware
+    - if there are vulnerabilities discovered, they cannot be patched (not always)
+    - resource constrained memory, CPU and battery -> not antivirus or firewall
+    - weak crypto, vulnerable to tampering
+        - perimeter protection: protect the network, not the device
+    - no TPM chip
+
+- firmware
+    - code that runs on an embedded system
+    - often runs on PLCs (programmable logic controllers)
+    - SoC (system on a chip), one-board computers
+        - mini-computers
+        - like Raspberry-Pi or Arduino
+        - not static like embedded devices and are quite powerful
+    - ASICs (application-specific integrated circuit)
+        - simple hardware controllers
+        - limited set of instructions
+        - immutable
+        - e.g. routers, security devices (for encryption and decryption)
+        - really fast
+        - code is written in the factory
+    - FPGA (field programmable gate arrays)
+        - FPGAs can be reprogrammed
+        - like a reprogrammable ASIC
+
+- RTOS (real-time operating system)
+    - where you need extreme predictability
+    - used in automation and time-sensitive operations
+    - no delay, no interruption to perform something else
+        - not even for security functions
+    - easy to DoS attacks -> or just mess up the timing
+    - monitor and harden their attack surface -> perimeter security
+
+- embedded systems communication
+    - they still have to talk to each other
+    - OT (operational technology) networks
+        - any network in an industrial environment
+        - e.g. industrial ethernet
+    - cellular -> more convenient
+        - relies on SIM identity
+        - NB-IoT is a low power LTE (4G), less than 100Kbps, good range
+            - narrow band IoT
+            - does not eat up that much battery
+        - LTE-M, up to 1Mbps
+        - both compatible with 5G
+        - operator encrypts between device and antenna tower
+        - internal network can be IPSec
+    - Z-Wave
+        - IoT devices, smart homes
+        - 900MHz
+        - supports mesh repeaters
+        - built-in encryption
+        - vulnerable to deauthentication attack
+    - Zigbee
+        - IoT devices, smart homes
+        - 2.4GHz
+        - good range, wide variety of devices, lot of vendors
+        - built-in encryption
+        - vulnerable to deauthentication attack
+
+- Industrial Control Systems (ICS)
+    - to control industrial machinery
+    - designed with functionality in mind
+    - focused on efficiency and safety
+    - security is just an afterthought
+    - interaction, monitoring from a HMI (human-machine interface), can be regular software
+    -> SCADA (supervisory control and data acquisition)
+        - many ICSs spread all over the place, controlled from a centralized location
+        - energy, utilities, transportation, manufacturing, ...
+        - can run on general-purpose computers as software
+        - no built-in or weak security
+        - Stuxnet: an attack designed against SCADA
+
+- IoT (internet of things)
+    - devices with sensors and software to send data
+    - hub system for communication and control
+        - e.g. use zigbee to reach the central hub in your home network
+    - smart "things"
+    - e.g. home automation, smart meters
+    - Internet of Threats -> very little focus on security
+        - user-friendly
+        - easy to set up
+        - the public does not care about security
+        - painfully insecure
+        - no upgrade capability
+        - badly documented, you don't even know what it does
+
+- BAS (building automation systems)
+    - like a home automation system but for large buildings
+    - smart HVAC, power, elevators, lighting
+    - vulnerable systems, usually overlooked in assessments
+    - faulty assumption is that these are isolated systems that do no need protection
+    - often hard-coded credentials or still using the default passwords
+
+- MFPs (multifunctional printers)
+    - low security computers
+    - everybody is updating their laptops, servers, etc, but nobody cares about the printers
+        - full of vulnerabilities
+        - lives in the middle of your enterprise network
+
+- vehicles and drones
+    - for entertainment
+    - computer-assisted driving
+    - ECUs (electronic control units) connected to a CAN (controller area network) bus
+    - external interface: OBD (onboard diagnostics)
+    - CAN bus has no security
+        - every message is a broadcast
+        - no security, no encryption, no authentication
+
+- medical devices
+    - legacy protocols and OSes
+    - not just in hospitals, but wearable devices as well
+    - high impact of compromise
+
+- securing embedded systems
+    - network segmentation -> separate these devices
+        - protect that network segment even more
+    - add security "on top"
+        - e.g. run IPSec tunnels
+    - difficult or no updates
+        - if updates can be installed, do so
+        - even if the firmware can only be updated manually, do it
+        - if no updates, replace them
+    - air gapping
+        - isolate these devices, no physical and logical connection
+        - hard to administer -> you need to physically connect to that network first
+            - or use a data diode -> communication flows only in one way
+                - e.g. only outgoing traffic is allowed to report sensor data
+                - could also be done using firewalls, but firewalls can be hacked
+                - these diodes are physically wired so that it is physically impossible for
+                  data to run in the other direction
+                - the diode takes care of the protocols that need bidirectional communication
+                  (e.g. TCP handshake)
