@@ -31,3 +31,103 @@ Securing Mobile Devices
                   environment, large delay
                 - data center and internet connections are additional points of failures
             -> thick client
+
+- managing mobile devices
+    - MDM (Mobile Device Management)
+        - manages how devices can be used
+        - e.g. only devices that have biometric scanners are enabled
+        - e.g. camera can be remotely disabled
+        - e.g. remote wipes can be performed is they get stolen
+    - MAM (Mobile Application Management)
+        - can decide which applications the users are allowed to run on their devices
+        - e.g. only a certain subset of the app store is available (vendors support this)
+        - also makes decisions about data -> you might be able to access both the work and the
+          personal email account, but should you be able to share work-related data over your
+          personal account?
+        => containerization : not like docker, more like storage isolation
+    - UEM (Unified Endpoint Management)
+        - more complex solutions
+        - not just about mobile devices
+        - patch management, policy management, down to every device
+
+- mobile operating systems
+    - Android
+    - iOS
+    - they both support centralized management, allow similar level of flexibility
+    - iOS is a more locked down system, applications are more tested, it is better from a
+      security perspective, there is so much isolation between the OS and the apps
+    - android is more flexible and more relaxed, exposing a larger attack surface
+    - iOS device are all controlled by Apple and updates are pushed to all devices at the same
+      time
+    - Android is vendor-specific, you need to wait for the device's vendor to push patches
+
+- authentication
+    - we are only going to allow devices to connect to the network if they have some sort of
+      authentication mechanism enabled -> filter out foreign users
+    - at least PIN, but rather fingerprint, pattern, face recognition, ...
+    - screen lock is also mandatory -> screen locks after some time
+    - context-dependent authentication
+        - e.g. if users are at home, they might be allowed to bypass some of the requirements,
+          for example they can disable screen lock in a safe environment
+        - e.g. some extra security measures might be enabled if users are on public wifi
+
+- remote wiping of mobile devices
+    - emergency erase
+    - used to remotely destroy all the data on the device
+    - mostly used if the device is stolen
+
+- mobile device encryption
+    - most devices allow full disk encryption (the whole storage is encrypted)
+    - this encryption happens using a key stored on the device
+    - in this case, remote wiping is done by simply deleting the key
+    - with iOS Data Protection, you get full device encryption automatically
+    - with Android, you don't automatically get this, because most Android devices are not
+      really powerful and encryption stresses out the CPU
+        - but you get file level encryption, meaning that your files are encrypted, but not
+          the whole storages (since Android 10)
+    - some Android devices support removable storage, like SD cards
+        -> are those also encrypted? most of the time they are not by default
+    - there is a device that can mimic the behavior of a TPM and can also be removed
+        => MicroSD HSM (Hardware Security Module)
+        - stores cryptographic data
+
+- location
+    - most devices are location-aware
+    -> policies can also influence how these location services work
+    - GPS (Global Positioning System)
+    - IPS (Indoor Positioning System)
+        - can rely e.g. on Bluetooth
+    - Geofencing
+        - virtual boundary matching some physical boundary
+        - whenever you step outside this boundary, a specific policy starts to apply
+    - Coordinate tagging
+        - you might want to disable this functionality
+        - most devices tag specific events and photos with location information
+        - when these photos are uploaded to a website, other people are able to track the
+          user's location
+
+- app and content management
+    - whitelisting
+        - most widely used
+        - there is a list of applications that you are allowed to install and that's it
+        - blacklisting is not really feasible, for that you would need to know about every
+          app out there
+    - custom "app store"
+        - be careful with Android, because it can load apps from other sources, even directly
+          from APK files
+        - iOS can also load applications from other app stores, but that requires jailbreaking
+          the phone, and jailbroken phones should not be allowed into the network at all
+    - third-party app sources -> sideloading
+    - content (data) must also be managed
+        - storage segmentation or "containerization"
+        - should prevent data from migrating over the boundaries
+
+- bypassing mobile security
+    - rooting and jailbreaking
+        - they basically mean the same thing
+        - rooting applies to Android
+        - jailbreaking applies to iOS
+        - user gains root privileges
+    - carrier unlock
+        - removing the restrictions for a specific wireless carrier
+        - you might want to allow this, because it does not pose any serious security risk
