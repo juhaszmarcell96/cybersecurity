@@ -1,0 +1,33 @@
+Securing Mobile Devices
+-----------------------
+
+- they are pretty powerful, and companies have very little inherent power over them
+
+- how do we bring mobile devices inside the company?
+    - BYOD : Bring Your Own Device (Disaster)
+        - users are allowed to use their own device for business related tasks
+        - companies need oversight over the devices -> users need to accept policies
+        - users need to accept that monitoring apps will be installed on their devices
+    - COBO : Corporate Owned, Business Only
+        - you get a company phone and you can only use it for work tasks
+        - hardened and locked device by the IT department
+        - may be used for personal purposes (not always)
+    - COPE : Corporate Owned, Personally-Enabled
+        - still a company-owned device, but users are allowed to use it for personal tasks
+        - the device is still subjected to the company's policies
+    - CYOD : Choose Your Own Device
+        - employees are given a list from which they can choose their device
+        - the device is still owned by the company, and is hardened by IT
+    - VDI : Virtual Desktop Infrastructure
+        - not exactly mobile but can be
+        - employees are provided with virtual machines running in data centers
+        - users connect to these devices remotely
+            - they still need some device to connect to the infrastructure
+            -> thin clients : very simple devices with a network interface and some USBs, and
+               can only do one thing, connect to the remote workstation
+                - from a management and security perspective, this is heaven
+                - patches are easy to install on the virtual machines
+                - from a user perspective, it is not that great, highly controlled work
+                  environment, large delay
+                - data center and internet connections are additional points of failures
+            -> thick client
