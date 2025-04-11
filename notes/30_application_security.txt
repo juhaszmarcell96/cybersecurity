@@ -32,3 +32,73 @@ Application Security
         - SIEM solutions should be able to detect these
 
 => you need to find the balance, you need just enough privileges for the application to run as intended, while also have as minimal privileges as possible so that attackers cannot gain too much privileges if they manage to hack the application
+
+- application errors
+    - will happen, no way to avoid them completely
+    - must be handled in code -> exception handling
+    - must not reveal detailed information to the user
+        - during development, it is useful to get as much info as possible
+        - when the program becomes live, these messages should not be there anymore
+            - don't dump the entire stack trace
+            - don't give the file and SQL query information to the attackers
+            - don't log usernames and passwords
+            - don't give specific error messages, e.g. wrong username, but rather more generic ones, such as e.g. login attempt failed
+
+- input validation
+    - the root of all evil, attackers need to send data to the applications they want to hack -> input
+        - string, images, files, ...
+    - validate on server-side, not on client-side
+        - client-side validation can by avoided
+        - do some validation on client-side as well, but don't rely solely on it
+    - risk of overflows, code injection, errors, DoS
+
+- buffer overflow
+    - a buffer is a pre-allocated amount of memory, prepared to store some data
+    - if there is more data than space in the buffer, the software can simply overwrite data that comes after the buffer, if the boundaries are not checked
+    - buffers, pointers, boundary checks
+    - stack overflow: data does not fit into the stack anymore (a type of buffer overflow error that occurs when a computer program tries to use more memory space in the call stack than has been allocated to that stack)
+
+            Higher Memory Addresses
+            +----------------------+  <- 0xFFFFFFFF (Typical for 32-bit systems)
+            |         Stack        |  <- Grows downward (toward lower addresses)
+            |          ...         |
+            |    Function Calls    |
+            |    Local Variables   |
+            |vvvvvvvvvvvvvvvvvvvvvv|
+            |                      |
+            |                      |
+            |                      |
+            |^^^^^^^^^^^^^^^^^^^^^^|
+            |         Heap         |  <- Grows upward (toward higher addresses)
+            |          ...         |
+            |     Dynamically      |
+            |    Allocated Data    |
+            +----------------------+
+            |  BSS (Uninit. Data)  |  <- Global/static uninitialized variables
+            +----------------------+
+            |  Data (Initialized)  |  <- Global/static initialized variables
+            +----------------------+
+            |         Text         |  <- Executable code (Read-Only)
+            |        (Code)        |
+            +----------------------+  <- 0x00000000 (Typical for 32-bit systems)
+            Lower Memory Addresses (Near 0x00000000)
+
+    - stack also stores the return address of functions, as well as function arguments, then come the local variables
+
+            +-----------------------+
+            |  Return Address       | <- Saved return address (where function will return)
+            +-----------------------+
+            |  Function Parameter 1 | <- Passed argument (e.g., int param1)
+            +-----------------------+
+            |  Function Parameter 2 | <- Passed argument (e.g., int param2)
+            +-----------------------+
+            |  Local Variable 1     | <- Any additional local variables
+            +-----------------------+
+            |  buf[2]               | <- 3rd element (Highest index) of buf[3]
+            +-----------------------+
+            |  buf[1]               | <- 2nd element
+            +-----------------------+
+            |         ...           |
+    
+    - buffers are stored as shown above, so a buffer overflow is capable of overwriting the function return address -> execution can jump the an injected memory address
+    - now, in modern devices, there is a feature called ASLR (address space layout randomization), which makes successful buffer overflow attacks much harder, because attackers do not know the address in memory where they need to jump to execute their injected code -> what they can do is to inject a bunch of NOP operations before the malicious code, so that they have a larger hit area -> when jumping to any of those instruction, the execution will just slide over them ("NOP sled") and hit the malicious code anyway => no need to pinpoint exact locations
