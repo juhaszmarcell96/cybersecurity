@@ -1,0 +1,34 @@
+Application Security
+--------------------
+
+- software is the root of all bugs -> was the software designed with security in mind?
+- most vulnerabilities do not appear in the protocols, but in very specific versions of software releases or operating systems
+
+- hacking : using a device/software/service in an other way than it was intended to be used
+    - originally, it did not have malicious intent attached to it
+
+- hacking applications
+    - exploiting vulnerabilities that break CIA (confidentiality, integrity, availability)
+    - how is it conducted? -> executing code
+        - ACE : arbitrary code execution
+        - RCE : remote code execution
+    - when a user uses a service or an application, they are executing that application's code
+    - a hacker tricks the application execute a code that did not originally belong to it
+        - the application makes the OS is execute the code
+
+- application privileges
+    - whenever an application is executing a code, it executes with the privileges of the
+      application
+    - applications need privileges to access resources and data
+    - there are user accounts and machine accounts
+        - applications started by the user are running with the user's privileges
+        - other applications started by the system are running with built-in account's privileges
+    - privilege escalation (PE)
+        - ACE or RCE only execute code with the running application's privileges
+            - once the hacker has access, the next step is finding a way to escalate privileges
+        - vertical PE -> from user to admin
+        - horizontal PE -> from user to another user
+    - privilege escalation can be detected in logs
+        - SIEM solutions should be able to detect these
+
+=> you need to find the balance, you need just enough privileges for the application to run as intended, while also have as minimal privileges as possible so that attackers cannot gain too much privileges if they manage to hack the application
