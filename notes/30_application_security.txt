@@ -102,3 +102,63 @@ Application Security
     
     - buffers are stored as shown above, so a buffer overflow is capable of overwriting the function return address -> execution can jump the an injected memory address
     - now, in modern devices, there is a feature called ASLR (address space layout randomization), which makes successful buffer overflow attacks much harder, because attackers do not know the address in memory where they need to jump to execute their injected code -> what they can do is to inject a bunch of NOP operations before the malicious code, so that they have a larger hit area -> when jumping to any of those instruction, the execution will just slide over them ("NOP sled") and hit the malicious code anyway => no need to pinpoint exact locations
+
+- mitigating buffer overflows
+    - input validation
+    - safer programming languages (memory-safe languages)
+    - safe functions
+        - even not inherently memory-safe languages offer safe function for e.g. copying data between buffers
+        - protects the function return address
+    - ASLR (address space layout randomization)
+    - stack canary
+        - value placed on the stack, if this value is overwritten, a buffer overflow occurred
+    - DEP (data execution prevention)
+        - stack is simply not executable
+
+- integer overflow
+    - what happens when an integer at it's max value is incremented?
+        - does it wrap around?
+        - does it cap at max value?
+        - is it undefined?
+    - can lead to issues
+        - e.g. too much product added to the shopping card -> price sum overflows -> only a few dollars
+
+- null pointer dereferencing
+    - pointer: a variable that stores a memory address
+    - getting access to the memory pointed to by that address is called dereferencing the pointer
+    - a null pointer points to the address 0
+    - null pointers cannot be dereferenced -> programming error or malicious overflow
+        - program crashes when a null pointer is dereferenced
+    - can cause a DoS attack at most
+
+- race conditions
+    - result of a process depends on the order of the execution of parallel running threads
+        - poorly synchronized threads -> order cannot be determined -> race condition
+    - TOC/TOU exception (Time-of-Check / Time-of-Use)
+        - data changes after you checked it but before you use it
+        - these two operations must be one single atomic operation
+            - executed together without interruption or not at all
+
+- memory leaks
+    - dynamically allocated memory is not released after use
+    - "malloc without free" or "new without delete"
+    - if this continuously happens over time, the software is going to run out of available memory
+    -> system crash
+    - most of the time it is accidental
+        - can be malicious as well, e.g. badly written malware
+
+- DLL injection
+    - dynamically-linked library
+    - DLL name comes from windows, they are called shared libraries on linux
+    - DLLs are external libraries that get loaded and executed at runtime
+    - DLL injection means that a malicious DLL is loaded by the software
+        - e.g. replace the DLL file on the filesystem
+
+- pass-the-hash (PtH)
+    - collecting cached credentials (SAM database) from compromised hosts and reusing in SSO systems
+        - Single Sign-On systems assign tokens to users after authentication, which allows them to further authenticate themselves without needed to enter the credentials again
+        - these tokens are cached on the local machine and might get stolen and presented to other services by an attacker
+    - collect hash of user credentials and present it to the SSO system from another computer, without knowing the password
+    - NTLM hashes vulnerable to PtH (legacy compatibility)
+        - NTLM: a suite of Microsoft security protocols intended to provide authentication, integrity, and confidentiality to users
+        - not used by modern windows systems, but might still be enabled for backward compatibility
